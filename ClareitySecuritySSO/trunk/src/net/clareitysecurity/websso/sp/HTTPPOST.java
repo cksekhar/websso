@@ -6,7 +6,7 @@
  * the logic necessary to use the HTTP POST binding.
  */
 
-package net.clareitysecurity.websso;
+package net.clareitysecurity.websso.sp;
 
 import java.io.StringWriter;
 import org.joda.time.DateTime;
@@ -87,7 +87,7 @@ public class HTTPPOST {
   }
   
   /*
-   * Create the HTTPPOST object.
+   * Create the HTTPPOST object for SP usage.
    */
   public HTTPPOST() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
