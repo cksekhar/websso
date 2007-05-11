@@ -1,23 +1,36 @@
 /*
- * HttpPost.java
+ * HttpRedirect.java
  *
  * This class encapsulates the logic to create a proper SAML 2.0
  * request to an Identity Provider to authenticate a user. It implements
- * the logic necessary to use the HTTP POST binding.
+ * the logic necessary to use the HTTP redirect binding.
  */
 
 package net.clareitysecurity.websso.sp;
 
 import java.io.StringWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.util.List;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.joda.time.DateTime;
 
 import org.opensaml.*;
+import org.opensaml.common.binding.BindingException;
 import org.opensaml.saml2.core.*;
 import org.opensaml.saml2.core.impl.*;
 import org.opensaml.xml.*;
 import org.opensaml.xml.io.*;
 import org.opensaml.xml.util.*;
 import org.opensaml.common.xml.SAMLConstants;
+import org.opensaml.ws.util.URLBuilder;
 
 import org.w3c.dom.Element;
 
@@ -25,13 +38,14 @@ import org.w3c.dom.Element;
  *
  * @author Paul Hethmon
  */
-public class HttpPost {
+public class HttpRedirect {
   
   private String
       issuerName,
       providerName,
       actionURL,
-      assertionConsumerServiceURL;
+      assertionConsumerServiceURL,
+      relayState;
   
   /*
    * The IssuerName is the unique identifier value of your application.
@@ -59,7 +73,7 @@ public class HttpPost {
     return providerName;
   }
   /*
-   * The ActionURL is the fully formed URL where the SAML Request will be posted
+   * The ActionURL is the fully formed URL where the SAML Request will be redirected
    * to. It should be of the form <b>http://www.acmeidp.com/recv-authnrequest.jsp</b>.
    */
   public void setActionURL(String newActionURL) {
@@ -85,22 +99,28 @@ public class HttpPost {
   public String getAssertionConsumerServiceURL() {
     return assertionConsumerServiceURL;
   }
+  public void setRelayState(String newRelayState) {
+    relayState = newRelayState;
+  }
+  public String getRelayState() {
+    return relayState;
+  }
   
   /*
-   * Create the HttpPost object for SP usage.
+   * Create the HttpRedirect object for SP usage.
    */
-  public HttpPost() throws org.opensaml.xml.ConfigurationException {
+  public HttpRedirect() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
   }
   
   /*
-   * Create a fully formed BASE64 representation of the SAML Request. The return value
-   * is the value to place into the <b>SAMLRequest</b> form field submitted to the Idp.
+   * Create a fully formed DEFLATEd and BASE64 representation of the SAML Request. The return value
+   * is the value to place in the redirect including the URL and parameters.
    *
-   * @return The BASE64 encoded SAMLRequest value.
+   * @return The full redirect URL.
    */
-  public String createSAMLRequest() throws org.opensaml.xml.io.MarshallingException {
+  public void sendSAMLRedirect(HttpServletResponse response) throws org.opensaml.xml.io.MarshallingException, BindingException, IOException {
     String samlRequest;
     
     // Use the OpenSAML Configuration singleton to get a builder factory object
@@ -135,19 +155,62 @@ public class HttpPost {
     XMLHelper.writeNode(authDOM, rspWrt);
     String messageXML = rspWrt.toString();
 
-    // Now do a special base64 encoding of our XML. Normal base64 has line length limitations.
-    samlRequest = new String(Base64.encodeBytes(messageXML.getBytes(), Base64.DONT_BREAK_LINES));
+    byte[] encodedMessage = deflateAndBase64Encode(messageXML);
 
-    return samlRequest;
+    String redirectURL = buildRedirectURL(new String(encodedMessage));
+
+    response.setCharacterEncoding("UTF-8");
+    response.addHeader("Cache-control", "no-cache, no-store");
+    response.addHeader("Pragma", "no-cache");
+    response.sendRedirect(redirectURL);
+    
+    return;
   }
   
-  /*
-   * Create the BASE64 encoded value for RelayState. The return value is the value to
-   * place into the <b>RelayState</b> form field submitted to the Idp.
+  /**
+   * DEFLATE (RFC1951) compresses the given SAML message.
    *
-   * @return The BASE64 encoded RelayState value.
+   * @param message SAML message
+   *
+   * @return DEFLATE compressed message
+   *
+   * @throws BindingException thrown if there is a problem compressing the message
    */
-  public String createRelayState(String uncodedRelayState) {
-    return ( new String(Base64.encodeBytes(uncodedRelayState.getBytes(), Base64.DONT_BREAK_LINES)) );
+  protected byte[] deflateAndBase64Encode(String messageStr) throws BindingException {
+    try {
+      ByteArrayOutputStream messageOut = new ByteArrayOutputStream();
+      Base64.OutputStream b64Out = new Base64.OutputStream(messageOut);
+      Deflater deflater = new Deflater(Deflater.DEFLATED, true);
+      DeflaterOutputStream deflaterStream = new DeflaterOutputStream(b64Out, deflater);
+      deflaterStream.write(messageStr.getBytes());
+      deflaterStream.close();
+      return messageOut.toByteArray();
+    } catch (IOException e) {
+      throw new BindingException("Unable to DEFLATE and Base64 encode SAML message", e);
+    }
   }
+  
+  /**
+   * Builds the URL to redirect the client to.
+   *
+   * @param message base64 encoded SAML message
+   *
+   * @return URL to redirect client to
+   *
+   */
+  protected String buildRedirectURL(String message) {
+    URLBuilder urlBuilder = new URLBuilder(getActionURL());
+    
+    List<Pair<String, String>> queryParams = urlBuilder.getQueryParams();
+    queryParams.clear();
+    
+    queryParams.add(new Pair<String, String>("SAMLRequest", message));
+    
+    if (!DatatypeHelper.isEmpty(getRelayState())) {
+      queryParams.add(new Pair<String, String>("RelayState", getRelayState()));
+    }
+    
+    return urlBuilder.buildURL();
+  }
+  
 }
