@@ -155,9 +155,9 @@ public class HttpRedirect {
     XMLHelper.writeNode(authDOM, rspWrt);
     String messageXML = rspWrt.toString();
 
-    byte[] encodedMessage = deflateAndBase64Encode(messageXML);
+    String encodedMessage = deflateAndBase64Encode(messageXML);
 
-    String redirectURL = buildRedirectURL(new String(encodedMessage));
+    String redirectURL = buildRedirectURL(encodedMessage);
 
     response.setCharacterEncoding("UTF-8");
     response.addHeader("Cache-control", "no-cache, no-store");
@@ -176,8 +176,16 @@ public class HttpRedirect {
    *
    * @throws BindingException thrown if there is a problem compressing the message
    */
-  protected byte[] deflateAndBase64Encode(String messageStr) throws BindingException {
-    try {
+  protected String deflateAndBase64Encode(String message) {
+    int compressedLength;
+    byte [] data = new byte[message.length()];
+    Deflater deflater = new Deflater(Deflater.DEFLATED, true);
+    deflater.setInput(message.getBytes());
+    deflater.finish();
+    compressedLength = deflater.deflate(data);
+    return ( Base64.encodeBytes(data, 0, compressedLength) );
+    
+      /*
       ByteArrayOutputStream messageOut = new ByteArrayOutputStream();
       Base64.OutputStream b64Out = new Base64.OutputStream(messageOut);
       Deflater deflater = new Deflater(Deflater.DEFLATED, true);
@@ -188,6 +196,7 @@ public class HttpRedirect {
     } catch (IOException e) {
       throw new BindingException("Unable to DEFLATE and Base64 encode SAML message", e);
     }
+       **/
   }
   
   /**
