@@ -47,7 +47,7 @@ import org.opensaml.xml.*;
 import org.opensaml.xml.io.*;
 import org.opensaml.xml.util.*;
 import org.opensaml.common.xml.SAMLConstants;
-import org.opensaml.ws.util.URLBuilder;
+import org.opensaml.util.URLBuilder;
 
 import org.w3c.dom.Element;
 

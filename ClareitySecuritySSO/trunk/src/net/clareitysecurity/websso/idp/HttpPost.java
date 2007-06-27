@@ -30,7 +30,7 @@ import org.opensaml.common.binding.BindingException;
 import org.opensaml.saml2.binding.*;
 import org.opensaml.saml2.core.*;
 import org.opensaml.xml.io.*;
-import org.opensaml.xml.parse.ParserPool;
+import org.opensaml.xml.parse.BasicParserPool;
 import org.opensaml.xml.util.Base64;
 import javax.servlet.http.HttpServletRequest;
 
@@ -78,7 +78,7 @@ public class HttpPost {
     AuthnRequest samlRequest = null;
     
     HTTPPostDecoder decode = new HTTPPostDecoder();
-    decode.setParserPool( new ParserPool() );
+    decode.setParserPool( new BasicParserPool() );
     decode.setRequest(request);
     decode.decode();
 
