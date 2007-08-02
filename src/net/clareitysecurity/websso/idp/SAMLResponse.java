@@ -100,8 +100,8 @@ public class SAMLResponse {
     org.opensaml.DefaultBootstrap.bootstrap();
   }
   
-
-  public String createSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
+  public Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
+    
     // Use the OpenSAML Configuration singleton to get a builder factory object
     XMLObjectBuilderFactory builderFactory = org.opensaml.Configuration.getBuilderFactory();
     
@@ -215,6 +215,10 @@ public class SAMLResponse {
     // Finally add the Assertion to our SAMLResponse
     rsp.getAssertions().add(assertion);
     
+    return rsp;
+  }
+  
+  public String createSuccessResponse(Response rsp) throws org.opensaml.xml.io.MarshallingException {
     // Now we must build our representation to put into the html form to be submitted to the idp
     Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(rsp);
     Element authDOM = marshaller.marshall(rsp);

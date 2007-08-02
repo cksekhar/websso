@@ -111,15 +111,7 @@ public class HttpPost {
     org.opensaml.DefaultBootstrap.bootstrap();
   }
   
-  /*
-   * Create a fully formed BASE64 representation of the SAML Request. The return value
-   * is the value to place into the <b>SAMLRequest</b> form field submitted to the Idp.
-   *
-   * @return The BASE64 encoded SAMLRequest value.
-   */
-  public String createSAMLRequest() throws org.opensaml.xml.io.MarshallingException {
-    String samlRequest;
-    
+  public AuthnRequest getAuthnRequest() {
     // Use the OpenSAML Configuration singleton to get a builder factory object
     XMLObjectBuilderFactory builderFactory = org.opensaml.Configuration.getBuilderFactory();
     // First get a builder for AuthnRequest
@@ -144,6 +136,18 @@ public class HttpPost {
     auth.setIssueInstant(dt);
     auth.setID("acmemls:" + dt.getMillis());
 
+    return auth;
+  }
+  
+  /*
+   * Create a fully formed BASE64 representation of the SAML Request. The return value
+   * is the value to place into the <b>SAMLRequest</b> form field submitted to the Idp.
+   *
+   * @return The BASE64 encoded SAMLRequest value.
+   */
+  public String createSAMLRequest(AuthnRequest auth) throws org.opensaml.xml.io.MarshallingException {
+    String samlRequest;
+    
     Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(auth);
     Element authDOM = marshaller.marshall(auth);
     // We use a StringWriter to produce our XML output. This gets us XML where
