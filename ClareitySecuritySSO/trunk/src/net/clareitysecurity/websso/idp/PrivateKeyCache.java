@@ -61,8 +61,9 @@ public class PrivateKeyCache {
   /** Creates a new instance of PrivateKeyCache */
   public PrivateKeyCache() {
     privateKeyEncoded = null;
-    Security.addProvider(new BouncyCastleProvider());
-  }
+//    Security.addProvider(new BouncyCastleProvider());
+    Security.insertProviderAt(new BouncyCastleProvider(), 2);
+}
   
   public PrivateKey getPrivateKey() {
     RSAPrivateKey privateKey = null;
@@ -72,6 +73,7 @@ public class PrivateKeyCache {
     
     try {
       keyFactory = KeyFactory.getInstance("RSA");
+      System.out.println("provider = " + keyFactory.getProvider().toString() );
       // decode private key
       binaryKey = Base64.decode( privateKeyEncoded );
       privSpec = new PKCS8EncodedKeySpec(binaryKey);
