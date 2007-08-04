@@ -27,7 +27,7 @@ package net.clareitysecurity.websso.idp;
 
 import org.opensaml.Configuration;
 import org.opensaml.common.binding.BindingException;
-import org.opensaml.saml2.binding.*;
+import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
 import org.opensaml.saml2.core.*;
 import org.opensaml.xml.io.*;
 import org.opensaml.xml.parse.BasicParserPool;
@@ -74,7 +74,7 @@ public class HttpPost {
     org.opensaml.DefaultBootstrap.bootstrap();
   }
   
-  public AuthnRequest decodeSAMLRequest(HttpServletRequest request) throws BindingException {
+  public AuthnRequest decodeSAMLRequest(HttpServletRequest request) throws BindingException, org.opensaml.ws.security.SecurityPolicyException {
     AuthnRequest samlRequest = null;
     
     HTTPPostDecoder decode = new HTTPPostDecoder();
