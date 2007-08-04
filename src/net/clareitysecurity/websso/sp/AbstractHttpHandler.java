@@ -16,11 +16,11 @@
  */
 
 /*
- * HttpPost.java
+ * AbstractHttpHandler.java
  *
  * This class encapsulates the logic to create a proper SAML 2.0
  * request to an Identity Provider to authenticate a user. It implements
- * the logic necessary to use the HTTP POST binding.
+ * the base logic necessary for HTTP methods of SSO.
  */
 
 package net.clareitysecurity.websso.sp;
@@ -42,7 +42,7 @@ import org.w3c.dom.Element;
  *
  * @author Paul Hethmon
  */
-public class HttpPost {
+public abstract class AbstractHttpHandler {
   
   private String
       issuerName,
@@ -104,9 +104,9 @@ public class HttpPost {
   }
   
   /*
-   * Create the HttpPost object for SP usage.
+   * Create the AbstractHttpHandler object for SP usage.
    */
-  public HttpPost() throws org.opensaml.xml.ConfigurationException {
+  public AbstractHttpHandler() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
   }
