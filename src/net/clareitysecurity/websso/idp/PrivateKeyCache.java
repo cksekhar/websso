@@ -27,6 +27,8 @@ package net.clareitysecurity.websso.idp;
 import org.opensaml.xml.util.Base64;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -42,6 +44,7 @@ import java.security.interfaces.*;
 public class PrivateKeyCache {
   
   private String privateKeyEncoded;
+  private RSAPrivateKey privateKey;
   
   /*
    * Set the BASE64 encoded value of the private key.
@@ -61,49 +64,70 @@ public class PrivateKeyCache {
   /** Creates a new instance of PrivateKeyCache */
   public PrivateKeyCache() {
     privateKeyEncoded = null;
+    privateKey = null;
 //    Security.addProvider(new BouncyCastleProvider());
     Security.insertProviderAt(new BouncyCastleProvider(), 2);
 }
   
+  /*
+   * Get the PrivateKey object for use in signing SAML objects.
+   * @return The PrivateKey object.
+   */
   public PrivateKey getPrivateKey() {
-    RSAPrivateKey privateKey = null;
+    //RSAPrivateKey privateKey = null;
     KeyFactory keyFactory;
     PKCS8EncodedKeySpec privSpec;
     byte [] binaryKey;
     
+    // If we have created it already, just return it.
+    if (privateKey != null) return privateKey;
+    
+    // Try to create the private key object and then return it.
     try {
       keyFactory = KeyFactory.getInstance("RSA");
-      System.out.println("provider = " + keyFactory.getProvider().toString() );
+      //System.out.println("provider = " + keyFactory.getProvider().toString() );
       // decode private key
       binaryKey = Base64.decode( privateKeyEncoded );
       privSpec = new PKCS8EncodedKeySpec(binaryKey);
       privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privSpec);
       return privateKey;
     } catch (NoSuchAlgorithmException nsae) {
-      System.out.append("NoSuchAlgorithmException");
+      //System.out.append("NoSuchAlgorithmException");
       nsae.printStackTrace();
       return null;
     } catch (InvalidKeySpecException ikse) {
-      System.out.append("InvalidKeySpecException");
+      //System.out.append("InvalidKeySpecException");
       ikse.printStackTrace();
       return null;
     }
-//    if (privateKey != null) return privateKey;
+  }
+  
+  /*
+   * Read the private key from a PEM encoded file and store the encoded
+   * string in this object.
+   * @param privateKeyFile The file containing the PEM encoded private key.
+   */
+  public void readPrivateKey(String privateKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
+    String
+        line,
+        encodedPrivateKey;
     
-/*            
-    // Create the Java PrivateKey object
-    X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec( Base64.decode( privateKeyEncoded ) );
-    // First try RSA encoded
-    if (privateKey != null) return privateKey;
-    
-    try {
-      keyFactory = KeyFactory.getInstance("DSA");
-      privateKey = keyFactory.generatePrivate(x509EncodedKeySpec);
-    } catch (NoSuchAlgorithmException nsae) {
-      
-    } catch (InvalidKeySpecException ikse) {
-      
+    encodedPrivateKey = "";
+    // try to load a private key
+    BufferedReader in = new BufferedReader(new FileReader(privateKeyFile));
+    line = in.readLine();
+    while (line != null) {
+      encodedPrivateKey += line + "\r\n";
+      line = in.readLine();
     }
-*/
+    in.close();
+    // Remove the markers from the data
+    encodedPrivateKey = encodedPrivateKey.replace("-----BEGIN RSA PRIVATE KEY-----", "");
+    encodedPrivateKey = encodedPrivateKey.replace("-----END RSA PRIVATE KEY-----", "");
+    encodedPrivateKey = encodedPrivateKey.trim();
+    // set the value in this object
+    this.setPrivateKeyEncoded(encodedPrivateKey);
+    
+    return;
   }
 }

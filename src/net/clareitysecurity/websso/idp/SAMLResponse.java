@@ -269,6 +269,20 @@ public class SAMLResponse {
     return rsp;
   }
   
+  /*
+   * Create a succesful SAML Response message as XML.
+   * @return The SAML message as XML.
+   */
+  public String createSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
+    Response rsp = getSuccessResponse();
+    return createSuccessResponse(rsp);
+  }
+  
+  /*
+   * Create a succesful SAML Response message as XML.
+   * @param rsp The Response object to create the XML from.
+   * @return The SAML message as XML.
+   */
   public String createSuccessResponse(Response rsp) throws org.opensaml.xml.io.MarshallingException {
     // Now we must build our representation to put into the html form to be submitted to the idp
     Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(rsp);

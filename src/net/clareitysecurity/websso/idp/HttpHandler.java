@@ -39,7 +39,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @author Paul Hethmon
  */
-public abstract class HttpHandler {
+public class HttpHandler {
 
   /** HTTP request param name for SAML request. */
   public static final String REQUEST_PARAM = "SAMLRequest";
