@@ -16,7 +16,7 @@
  */
 
 /*
- * HttpRedirect.java
+ * RedirectHandler.java
  *
  * This class encapsulates the logic to create a proper SAML 2.0
  * request to an Identity Provider to authenticate a user. It implements
@@ -55,7 +55,7 @@ import org.w3c.dom.Element;
  *
  * @author Paul Hethmon
  */
-public class HttpRedirect {
+public class RedirectHandler extends AbstractHttpHandler  {
   
   private String
       issuerName,
@@ -124,9 +124,9 @@ public class HttpRedirect {
   }
   
   /*
-   * Create the HttpRedirect object for SP usage.
+   * Create the RedirectHandler object for SP usage.
    */
-  public HttpRedirect() throws org.opensaml.xml.ConfigurationException {
+  public RedirectHandler() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
   }
