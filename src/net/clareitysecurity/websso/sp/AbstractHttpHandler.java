@@ -25,7 +25,7 @@
 
 package net.clareitysecurity.websso.sp;
 
-import java.io.StringWriter;
+//import java.io.StringWriter;
 import org.joda.time.DateTime;
 
 import org.opensaml.*;
@@ -44,11 +44,13 @@ import org.w3c.dom.Element;
  */
 public abstract class AbstractHttpHandler {
   
-  private String
+  protected String
       issuerName,
       providerName,
       actionURL,
       assertionConsumerServiceURL;
+  protected boolean
+      forceReAuthentication;
   
   /*
    * The IssuerName is the unique identifier value of your application.
@@ -102,6 +104,21 @@ public abstract class AbstractHttpHandler {
   public String getAssertionConsumerServiceURL() {
     return assertionConsumerServiceURL;
   }
+  /*
+   * Set whether you want the IdP to re-authenticate the user. Default value is false.
+   * @param newForceReAuthentication If true, the IdP will require the user to re-authenticate.
+   */
+  public void setForceReAuthentication(boolean newForceReAuthentication) {
+    forceReAuthentication = true;
+  }
+  /*
+   * Get the value of whether you want the IdP to re-authenticate the user. Default value
+   * is false.
+   * @return The current value (true means force re-authentication)
+   */
+  public boolean getForceReAuthentication() {
+    return forceReAuthentication;
+  }
   
   /*
    * Create the AbstractHttpHandler object for SP usage.
@@ -109,9 +126,10 @@ public abstract class AbstractHttpHandler {
   public AbstractHttpHandler() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
+    forceReAuthentication = false;
   }
   
-  public AuthnRequest getAuthnRequest() {
+  public AuthnRequestImpl buildAuthnRequest() {
     // Use the OpenSAML Configuration singleton to get a builder factory object
     XMLObjectBuilderFactory builderFactory = org.opensaml.Configuration.getBuilderFactory();
     // First get a builder for AuthnRequest
@@ -129,6 +147,10 @@ public abstract class AbstractHttpHandler {
     auth.setProviderName(providerName);
     auth.setAssertionConsumerServiceURL(assertionConsumerServiceURL);
     auth.setDestination(actionURL);
+    // Only add the parameter if it is true.
+    if (forceReAuthentication == true) {
+      auth.setForceAuthn(forceReAuthentication);
+    }
     //auth.setAssertionConsumerServiceIndex(0);
     //auth.setAttributeConsumingServiceIndex(0);
     auth.setVersion(org.opensaml.common.SAMLVersion.VERSION_20);
@@ -139,36 +161,4 @@ public abstract class AbstractHttpHandler {
     return auth;
   }
   
-  /*
-   * Create a fully formed BASE64 representation of the SAML Request. The return value
-   * is the value to place into the <b>SAMLRequest</b> form field submitted to the Idp.
-   *
-   * @return The BASE64 encoded SAMLRequest value.
-   */
-  public String createSAMLRequest(AuthnRequest auth) throws org.opensaml.xml.io.MarshallingException {
-    String samlRequest;
-    
-    Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(auth);
-    Element authDOM = marshaller.marshall(auth);
-    // We use a StringWriter to produce our XML output. This gets us XML where
-    // the encoding is UTF-8
-    StringWriter rspWrt = new StringWriter();
-    XMLHelper.writeNode(authDOM, rspWrt);
-    String messageXML = rspWrt.toString();
-
-    // Now do a special base64 encoding of our XML. Normal base64 has line length limitations.
-    samlRequest = new String(Base64.encodeBytes(messageXML.getBytes(), Base64.DONT_BREAK_LINES));
-
-    return samlRequest;
-  }
-  
-  /*
-   * Create the BASE64 encoded value for RelayState. The return value is the value to
-   * place into the <b>RelayState</b> form field submitted to the Idp.
-   *
-   * @return The BASE64 encoded RelayState value.
-   */
-  public String createRelayState(String uncodedRelayState) {
-    return ( new String(Base64.encodeBytes(uncodedRelayState.getBytes(), Base64.DONT_BREAK_LINES)) );
-  }
 }
