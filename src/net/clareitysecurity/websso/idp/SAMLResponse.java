@@ -250,20 +250,6 @@ public class SAMLResponse {
     
     // Sign the assertion if asked to do so.
     if ((signAssertion == true) && (signature != null)) {
-/*      
-      XMLSignature dsig = null;
-      if (signature.getHMACOutputLength() != null && SecurityHelper.isHMAC(signature.getSignatureAlgorithm())) {
-        dsig = new XMLSignature(document, "", signature.getSignatureAlgorithm(),
-            signature.getHMACOutputLength(), signature.getCanonicalizationAlgorithm());
-      } else {
-        dsig = new XMLSignature(document, "", signature.getSignatureAlgorithm(),
-            signature.getCanonicalizationAlgorithm());
-      }
-      for (ContentReference contentReference : signature.getContentReferences()) {
-        contentReference.createReference(dsig);
-      }
-*/      
-      
       org.opensaml.common.impl.SAMLObjectContentReference socr = new org.opensaml.common.impl.SAMLObjectContentReference(assertion);
       signature.getContentReferences().add(socr);
       assertion.setSignature(signature);

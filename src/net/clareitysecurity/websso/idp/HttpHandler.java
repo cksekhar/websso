@@ -16,10 +16,8 @@
  */
 
 /*
- * AbstractHttpHandler.java
+ * HttpHandler.java
  *
- * This class implements the logic necessary to decode and validate a SAML Request
- * received from a Service Provider for the HTTP POST binding.
  *
  */
 
@@ -28,6 +26,7 @@ package net.clareitysecurity.websso.idp;
 import org.opensaml.Configuration;
 import org.opensaml.common.binding.BindingException;
 import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
+import org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder;
 import org.opensaml.saml2.core.*;
 import org.opensaml.xml.io.*;
 import org.opensaml.xml.parse.BasicParserPool;
@@ -35,10 +34,12 @@ import org.opensaml.xml.util.Base64;
 import javax.servlet.http.HttpServletRequest;
 
 /**
+ * This class implements the logic necessary to decode and validate a SAML Request
+ * received from a Service Provider for the HTTP POST or redirect binding.
  *
  * @author Paul Hethmon
  */
-public abstract class AbstractHttpHandler {
+public abstract class HttpHandler {
 
   /** HTTP request param name for SAML request. */
   public static final String REQUEST_PARAM = "SAMLRequest";
@@ -67,9 +68,9 @@ public abstract class AbstractHttpHandler {
   }
   
   /*
-   * Create the AbstractHttpHandler object for Idp usage.
+   * Create the HttpHandler object for Idp usage.
    */
-  public AbstractHttpHandler() throws org.opensaml.xml.ConfigurationException {
+  public HttpHandler() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
   }
@@ -77,21 +78,39 @@ public abstract class AbstractHttpHandler {
   public AuthnRequest decodeSAMLRequest(HttpServletRequest request) throws BindingException, org.opensaml.ws.security.SecurityPolicyException {
     AuthnRequest samlRequest = null;
     
-    HTTPPostDecoder decode = new HTTPPostDecoder();
-    decode.setParserPool( new BasicParserPool() );
-    decode.setRequest(request);
-    decode.decode();
+    // First see whether we have a GET or POST so we know where to look for the data
+    if (request.getMethod().equalsIgnoreCase("GET") == true) {
+      HTTPRedirectDeflateDecoder decode = new HTTPRedirectDeflateDecoder();
+      decode.setParserPool( new BasicParserPool() );
+      decode.setRequest(request);
+      decode.decode();
+      // Save the SAML Request as a SAML Object
+      samlRequest = (AuthnRequest) decode.getSAMLMessage();
+      // Now save it as a String in case we need it later
+      byte [] b = Base64.decode(request.getParameter(REQUEST_PARAM));
+      xmlSAMLRequest = new String(b);
 
-    // Save the SAML Request as a SAML Object
-    samlRequest = (AuthnRequest) decode.getSAMLMessage();
-    // Now save it as a String in case we need it later
-    byte [] b = Base64.decode(request.getParameter(REQUEST_PARAM));
-    xmlSAMLRequest = new String(b);
+      // Now save the Relay State as an encoded value. We only return this
+      // to the SP, so no need to Base64 decode it.
+      relayState = decode.getRelayState();
+    } else if (request.getMethod().equalsIgnoreCase("POST") == true) {
+      HTTPPostDecoder decode = new HTTPPostDecoder();
+      decode.setParserPool( new BasicParserPool() );
+      decode.setRequest(request);
+      decode.decode();
+      // Save the SAML Request as a SAML Object
+      samlRequest = (AuthnRequest) decode.getSAMLMessage();
+      // Now save it as a String in case we need it later
+      byte [] b = Base64.decode(request.getParameter(REQUEST_PARAM));
+      xmlSAMLRequest = new String(b);
 
-    // Now save the Relay State as an encoded value. We only return this
-    // to the SP, so no need to Base64 decode it.
-    relayState = decode.getRelayState();
-    
+      // Now save the Relay State as an encoded value. We only return this
+      // to the SP, so no need to Base64 decode it.
+      relayState = decode.getRelayState();
+    } else {
+      // bad things happened here
+    }
+
     return samlRequest;
   }
 }
