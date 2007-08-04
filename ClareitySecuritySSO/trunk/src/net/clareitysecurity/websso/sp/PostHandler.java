@@ -54,6 +54,16 @@ public class PostHandler extends AbstractHttpHandler {
    *
    * @return The BASE64 encoded SAMLRequest value.
    */
+  public String createSAMLRequest() throws org.opensaml.xml.io.MarshallingException {
+    AuthnRequest auth = buildAuthnRequest();
+    return createSAMLRequest(auth);
+  }
+  /*
+   * Create a fully formed BASE64 representation of the SAML Request. The return value
+   * is the value to place into the <b>SAMLRequest</b> form field submitted to the Idp.
+   * @param auth The AuthnRequest object to marshall and encode for POSTing
+   * @return The BASE64 encoded SAMLRequest value.
+   */
   public String createSAMLRequest(AuthnRequest auth) throws org.opensaml.xml.io.MarshallingException {
     String samlRequest;
     
