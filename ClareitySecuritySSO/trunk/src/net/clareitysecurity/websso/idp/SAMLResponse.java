@@ -25,6 +25,8 @@ package net.clareitysecurity.websso.idp;
 import java.io.StringWriter;
 import org.joda.time.DateTime;
 
+import org.apache.xml.security.signature.XMLSignature;
+
 import org.opensaml.*;
 import org.opensaml.common.SAMLVersion;
 import org.opensaml.common.binding.BindingException;
@@ -37,6 +39,8 @@ import org.opensaml.xml.parse.ParserPool;
 import org.opensaml.xml.io.*;
 import org.opensaml.xml.util.Base64;
 import org.opensaml.xml.util.XMLHelper;
+import org.opensaml.xml.security.SecurityHelper;
+import org.opensaml.xml.signature.*;
 
 import org.w3c.dom.Element;
 
@@ -54,6 +58,10 @@ public class SAMLResponse {
     loginId,
     actionURL,
     responseXML;
+  private PrivateKeyCache
+    privateKeyCache;
+  private boolean
+    signAssertion;
   
   public void setAuthnRequest(AuthnRequest newAuthnRequest) {
     authnRequest = newAuthnRequest;
@@ -91,20 +99,45 @@ public class SAMLResponse {
   public String getResponseXML() {
     return responseXML;
   }
-  
+  public void setPrivateKeyCache(PrivateKeyCache newPrivateKeyCache) {
+    privateKeyCache = newPrivateKeyCache;
+  }
+  public PrivateKeyCache getPrivateKeyCache() {
+    return privateKeyCache;
+  }
+  public void setSignAssertion(boolean newSignAssertion) {
+    signAssertion = newSignAssertion;
+  }
+  public boolean getSignAssertion() {
+    return signAssertion;
+  }
   /*
    * Create the SAMLResponse object for Idp usage.
    */
   public SAMLResponse() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
+    privateKeyCache = null;
   }
   
   public Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
+    org.opensaml.xml.signature.impl.SignatureImpl signature = null;
+    org.opensaml.xml.security.x509.BasicX509Credential credential = null;
     
     // Use the OpenSAML Configuration singleton to get a builder factory object
     XMLObjectBuilderFactory builderFactory = org.opensaml.Configuration.getBuilderFactory();
     
+    // Set up the signing credentials if we have been given them.
+    if (privateKeyCache != null) {
+      org.opensaml.xml.signature.impl.SignatureBuilder signatureBuilder = new org.opensaml.xml.signature.impl.SignatureBuilder();
+      signature = signatureBuilder.buildObject();
+      credential = new org.opensaml.xml.security.x509.BasicX509Credential();
+      credential.setPrivateKey(privateKeyCache.getPrivateKey());
+      signature.setSigningCredential(credential);
+      signature.setSignatureAlgorithm( SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1 );
+      signature.setCanonicalizationAlgorithm( SignatureConstants.ALGO_ID_C14N_EXCL_WITH_COMMENTS );
+    }
+
     // we must now build the SAMLResponse object to redirect the user back to the SP with
     // saml-core-2.0 has example of a response object, section 5.4.6, page 70
     ResponseBuilder rspBldr = (ResponseBuilder) builderFactory.getBuilder(org.opensaml.saml2.core.Response.DEFAULT_ELEMENT_NAME);
@@ -214,6 +247,38 @@ public class SAMLResponse {
     
     // Finally add the Assertion to our SAMLResponse
     rsp.getAssertions().add(assertion);
+    
+    // Sign the assertion if asked to do so.
+    if ((signAssertion == true) && (signature != null)) {
+/*      
+      XMLSignature dsig = null;
+      if (signature.getHMACOutputLength() != null && SecurityHelper.isHMAC(signature.getSignatureAlgorithm())) {
+        dsig = new XMLSignature(document, "", signature.getSignatureAlgorithm(),
+            signature.getHMACOutputLength(), signature.getCanonicalizationAlgorithm());
+      } else {
+        dsig = new XMLSignature(document, "", signature.getSignatureAlgorithm(),
+            signature.getCanonicalizationAlgorithm());
+      }
+      for (ContentReference contentReference : signature.getContentReferences()) {
+        contentReference.createReference(dsig);
+      }
+*/      
+      
+      org.opensaml.common.impl.SAMLObjectContentReference socr = new org.opensaml.common.impl.SAMLObjectContentReference(assertion);
+      signature.getContentReferences().add(socr);
+      assertion.setSignature(signature);
+      // Get the marshaller factory
+      MarshallerFactory marshallerFactory = org.opensaml.Configuration.getMarshallerFactory();
+      Marshaller marshaller = marshallerFactory.getMarshaller(assertion);
+      try {
+        // By marshalling the assertion, we will create the XML so that the signing will have something to sign
+        marshaller.marshall(assertion);
+      } catch (MarshallingException e) {
+        e.printStackTrace();
+      }
+      // Now sign it
+      org.opensaml.xml.signature.Signer.signObject(signature);
+    }
     
     return rsp;
   }
