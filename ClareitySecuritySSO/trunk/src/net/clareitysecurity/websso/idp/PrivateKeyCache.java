@@ -29,6 +29,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -105,22 +107,40 @@ public class PrivateKeyCache {
   /*
    * Read the private key from a PEM encoded file and store the encoded
    * string in this object.
+   * @param privateKeyFile An InputStream containing the PEM encoded private key.
+   */
+  public void readPrivateKey(InputStream privateKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
+    BufferedReader in = new BufferedReader(new InputStreamReader(privateKeyFile));
+    readPrivateKey(in);
+  }
+  /*
+   * Read the private key from a PEM encoded file and store the encoded
+   * string in this object.
    * @param privateKeyFile The file containing the PEM encoded private key.
    */
   public void readPrivateKey(String privateKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
+    // try to load a private key
+    BufferedReader in = new BufferedReader(new FileReader(privateKeyFile));
+    readPrivateKey(in);
+  }  
+  /*
+   * Read the private key from a PEM encoded file and store the encoded
+   * string in this object.
+   * @param privateKeyFile A BufferedReader containing the PEM encoded private key.
+   */
+  public void readPrivateKey(BufferedReader privateKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
     String
         line,
         encodedPrivateKey;
     
     encodedPrivateKey = "";
-    // try to load a private key
-    BufferedReader in = new BufferedReader(new FileReader(privateKeyFile));
-    line = in.readLine();
+    
+    line = privateKeyFile.readLine();
     while (line != null) {
       encodedPrivateKey += line + "\r\n";
-      line = in.readLine();
+      line = privateKeyFile.readLine();
     }
-    in.close();
+    privateKeyFile.close();
     // Remove the markers from the data
     encodedPrivateKey = encodedPrivateKey.replace("-----BEGIN RSA PRIVATE KEY-----", "");
     encodedPrivateKey = encodedPrivateKey.replace("-----END RSA PRIVATE KEY-----", "");
