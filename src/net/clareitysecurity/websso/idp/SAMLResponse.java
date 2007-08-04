@@ -118,17 +118,21 @@ public class SAMLResponse {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
     privateKeyCache = null;
+    signAssertion = false;
   }
   
   public Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
     org.opensaml.xml.signature.impl.SignatureImpl signature = null;
     org.opensaml.xml.security.x509.BasicX509Credential credential = null;
     
+    System.out.println("Building Response object ...");
     // Use the OpenSAML Configuration singleton to get a builder factory object
     XMLObjectBuilderFactory builderFactory = org.opensaml.Configuration.getBuilderFactory();
     
     // Set up the signing credentials if we have been given them.
     if (privateKeyCache != null) {
+      System.out.println("Configuring signature ...");
+      try {
       org.opensaml.xml.signature.impl.SignatureBuilder signatureBuilder = new org.opensaml.xml.signature.impl.SignatureBuilder();
       signature = signatureBuilder.buildObject();
       credential = new org.opensaml.xml.security.x509.BasicX509Credential();
@@ -136,6 +140,11 @@ public class SAMLResponse {
       signature.setSigningCredential(credential);
       signature.setSignatureAlgorithm( SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1 );
       signature.setCanonicalizationAlgorithm( SignatureConstants.ALGO_ID_C14N_EXCL_WITH_COMMENTS );
+      } catch (Exception e) {
+        System.out.println("Caught exception configuring signature");
+        e.printStackTrace();
+      }
+      System.out.println("Finished Configuring signature ...");
     }
 
     // we must now build the SAMLResponse object to redirect the user back to the SP with
@@ -249,8 +258,10 @@ public class SAMLResponse {
     rsp.getAssertions().add(assertion);
     
     // Sign the assertion if asked to do so.
+    org.opensaml.common.impl.SAMLObjectContentReference socr;
     if ((signAssertion == true) && (signature != null)) {
-      org.opensaml.common.impl.SAMLObjectContentReference socr = new org.opensaml.common.impl.SAMLObjectContentReference(assertion);
+      System.out.println("Signing assertion ...");
+      socr = new org.opensaml.common.impl.SAMLObjectContentReference(assertion);
       signature.getContentReferences().add(socr);
       assertion.setSignature(signature);
       // Get the marshaller factory
@@ -264,6 +275,7 @@ public class SAMLResponse {
       }
       // Now sign it
       org.opensaml.xml.signature.Signer.signObject(signature);
+      System.out.print("Assertion is now signed ...");
     }
     
     return rsp;
