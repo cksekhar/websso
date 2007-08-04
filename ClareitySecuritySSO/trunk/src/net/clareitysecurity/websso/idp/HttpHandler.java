@@ -16,7 +16,7 @@
  */
 
 /*
- * HttpPost.java
+ * AbstractHttpHandler.java
  *
  * This class implements the logic necessary to decode and validate a SAML Request
  * received from a Service Provider for the HTTP POST binding.
@@ -38,7 +38,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @author Paul Hethmon
  */
-public class HttpPost {
+public abstract class AbstractHttpHandler {
 
   /** HTTP request param name for SAML request. */
   public static final String REQUEST_PARAM = "SAMLRequest";
@@ -49,7 +49,7 @@ public class HttpPost {
   /** HTTP request param name for relay state. */
   public static final String RELAY_STATE_PARAM = "RelayState";
   
-  private String
+  protected String
     xmlSAMLRequest,
     relayState;
   
@@ -67,9 +67,9 @@ public class HttpPost {
   }
   
   /*
-   * Create the HttpPost object for Idp usage.
+   * Create the AbstractHttpHandler object for Idp usage.
    */
-  public HttpPost() throws org.opensaml.xml.ConfigurationException {
+  public AbstractHttpHandler() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
   }
