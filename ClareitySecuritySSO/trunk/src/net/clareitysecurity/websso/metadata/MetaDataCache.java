@@ -32,6 +32,7 @@ import org.opensaml.saml2.metadata.impl.*;
 import org.opensaml.xml.signature.KeyInfo;
 import org.opensaml.xml.signature.*;
 import org.opensaml.xml.signature.impl.*;
+import org.opensaml.xml.signature.SignatureValidator;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -60,6 +61,8 @@ public class MetaDataCache {
       metaTimeout;
   protected PublicKey
       publicKey;
+  protected SignatureValidator
+      signatureValidator;
   
   /*
    * Set the URL to retrieve the metadata from.
@@ -95,7 +98,7 @@ public class MetaDataCache {
    * before timing out.
    * @param newTimeOut The time in milliseconds to wait for the server to respond.
    */
-  public void setTimeOut(int newMetaTimeout) {
+  public void setMetaTimeout(int newMetaTimeout) {
     metaTimeout = newMetaTimeout;
   }
   /*
@@ -119,6 +122,21 @@ public class MetaDataCache {
   public PublicKey getPublicKey() {
     return publicKey;
   }
+  /*
+   * Set the SignatureValidator object value. The SignatureValidator is used to
+   * validate the signatures of signed SAML objects from the IdP.
+   * @param newSignatureValidator The new SignatureValidator object.
+   */
+  public void setSignatureValidator(SignatureValidator newSignatureValidator) {
+    signatureValidator = newSignatureValidator;
+  }
+  /*
+   * Get the SignatureValidator object to validate signatures of the IdP.
+   * @return The SignatureValidator object.
+   */
+  public SignatureValidator getSignatureValidator() {
+    return signatureValidator;
+  }
   
   /** Creates a new instance of MetaDataCache */
   public MetaDataCache() throws org.opensaml.xml.ConfigurationException {
@@ -128,6 +146,10 @@ public class MetaDataCache {
     parser = new BasicParserPool();
     // Choose to use the Bouncy Castle JCE provider most often
     Security.insertProviderAt(new BouncyCastleProvider(), 2);
+    // Provide some default values
+    setMetaTimeout(60000);
+    setMetaFile("metadata-backing-file.xml");
+    setMetaUrl("http://127.0.0.1/metadata.xml");
 }
  
   /*
@@ -137,21 +159,22 @@ public class MetaDataCache {
    */
   public boolean fetchMetaData() 
     throws MetadataProviderException, java.security.cert.CertificateException, java.security.NoSuchAlgorithmException,
-      java.security.spec.InvalidKeySpecException {
+      java.security.spec.InvalidKeySpecException
+  {
     // Pull the metadata from the web server
     FileBackedHTTPMetadataProvider fbmd;
-    fbmd = new FileBackedHTTPMetadataProvider(metaUrl, 60000, metaFile);
+    fbmd = new FileBackedHTTPMetadataProvider(getMetaUrl(), getMetaTimeout(), getMetaFile());
     fbmd.setParserPool(parser);
     fbmd.initialize();
     
     // Now start to parse it out.
     EntityDescriptorImpl exml;
     exml = (EntityDescriptorImpl) fbmd.getMetadata();
-    System.out.println("Have EntityDescriptorImpl XMLObject");
+//    System.out.println("Have EntityDescriptorImpl XMLObject");
     
     IDPSSODescriptorImpl idp;
     idp = (IDPSSODescriptorImpl) exml.getIDPSSODescriptor("urn:oasis:names:tc:SAML:2.0:protocol");
-    System.out.println("Got IDPSSODescriptor");
+//    System.out.println("Got IDPSSODescriptor");
     
     java.util.List<KeyDescriptor> keyList;
     keyList = idp.getKeyDescriptors();
@@ -162,7 +185,7 @@ public class MetaDataCache {
     // Get the KeyInfo node
     KeyInfo keyInfo;
     keyInfo = keyDesc.getKeyInfo();
-    System.out.println("Got KeyInfo");
+//    System.out.println("Got KeyInfo");
 
     // Get the list of certificates
     java.util.List<X509Data> x509List;
@@ -192,6 +215,13 @@ public class MetaDataCache {
 //    System.out.println("provider = " + keyFactory.getProvider().toString() );
     // Now let's finally generate that PublicKey that we can actually use to validate signatures
     setPublicKey(keyFactory.generatePublic(pubKeySpec));
+    
+    // Now we need to validate the signature. First create the Credentials
+    org.opensaml.xml.security.x509.BasicX509Credential publicCredential = new org.opensaml.xml.security.x509.BasicX509Credential();
+    // Add the PublicKey value
+    publicCredential.setPublicKey(getPublicKey());
+    // And create a SignatureValidator with it.
+    setSignatureValidator( new org.opensaml.xml.signature.SignatureValidator(publicCredential) );
     
     return true;
   }

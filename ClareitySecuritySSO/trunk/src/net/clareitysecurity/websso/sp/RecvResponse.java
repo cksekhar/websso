@@ -27,15 +27,17 @@ package net.clareitysecurity.websso.sp;
 import java.io.StringWriter;
 import javax.servlet.http.HttpServletRequest;
 
-import org.opensaml.saml2.binding.*;
 import org.opensaml.saml2.core.*;
 import org.opensaml.saml2.core.impl.*;
+import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
 
 import org.opensaml.xml.io.*;
 import org.opensaml.xml.parse.BasicParserPool;
 import org.opensaml.xml.util.Base64;
 import org.opensaml.xml.util.XMLHelper;
 import org.opensaml.xml.XMLObjectBuilderFactory;
+import org.opensaml.xml.signature.SignatureValidator;
+import org.opensaml.xml.signature.Signature;
 
 import org.w3c.dom.Element;
 
@@ -51,6 +53,8 @@ public class RecvResponse {
       relayState,
       loginId,
       responseXML;
+  protected SignatureValidator
+      signatureValidator;
   
   /*
    * Set the value of the relay state.
@@ -94,6 +98,14 @@ public class RecvResponse {
   public String getResponseXML() {
     return responseXML;
   }
+  /*
+   * Set the SignatureValidator object value. The SignatureValidator is used to
+   * validate the signatures of signed SAML objects from the IdP.
+   * @param newSignatureValidator The new SignatureValidator object.
+   */
+  public void setSignatureValidator(SignatureValidator newSignatureValidator) {
+    signatureValidator = newSignatureValidator;
+  }
   
   /** Creates a new instance of RecvResponse */
   public RecvResponse() throws org.opensaml.xml.ConfigurationException {
@@ -102,7 +114,8 @@ public class RecvResponse {
   }
   
   public void processRequest(HttpServletRequest request) 
-    throws org.opensaml.xml.io.MarshallingException, org.opensaml.common.binding.BindingException
+    throws org.opensaml.xml.io.MarshallingException, org.opensaml.common.binding.BindingException, 
+      org.opensaml.ws.security.SecurityPolicyException, org.opensaml.xml.validation.ValidationException
   {
     java.util.List<Assertion> assertionsList;
     
@@ -128,6 +141,12 @@ public class RecvResponse {
     if (assertionsList.size() > 0) {
       // Get the first one only
       assertion = (Assertion)assertionsList.get(0);
+      // Now we must validate the signature of the assertion
+      Signature signatureToValidate;
+      signatureToValidate = assertion.getSignature();
+      // Now try to validate. Throw exception if not valid.
+      signatureValidator.validate(signatureToValidate);
+      
       // Pull the Subject data
       Subject subject = assertion.getSubject();
       // Now we have the NameID element
