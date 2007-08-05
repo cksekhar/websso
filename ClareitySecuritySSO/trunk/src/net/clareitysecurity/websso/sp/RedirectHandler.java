@@ -111,7 +111,7 @@ public class RedirectHandler extends AbstractHttpHandler {
    *
    * @return The SAML Request as XML.
    */
-  public String createSAMLRedirect(HttpServletResponse response) throws org.opensaml.xml.io.MarshallingException, BindingException, IOException {
+  public String createSAMLRedirect() throws org.opensaml.xml.io.MarshallingException, BindingException, IOException {
     String samlRequest;
     
     // build an AuthnRequest object
