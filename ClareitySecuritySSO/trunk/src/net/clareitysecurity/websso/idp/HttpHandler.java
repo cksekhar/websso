@@ -23,6 +23,7 @@
 
 package net.clareitysecurity.websso.idp;
 
+import org.apache.log4j.Logger;
 import org.opensaml.Configuration;
 import org.opensaml.common.binding.BindingException;
 import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
@@ -41,6 +42,9 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class HttpHandler {
 
+  /** Class logger. */
+  private final Logger log = Logger.getLogger(HttpHandler.class);
+  
   /** HTTP request param name for SAML request. */
   public static final String REQUEST_PARAM = "SAMLRequest";
 
@@ -75,11 +79,21 @@ public class HttpHandler {
     org.opensaml.DefaultBootstrap.bootstrap();
   }
   
-  public AuthnRequest decodeSAMLRequest(HttpServletRequest request) throws BindingException, org.opensaml.ws.security.SecurityPolicyException {
+  public AuthnRequest decodeSAMLRequest(HttpServletRequest request) 
+    throws BindingException, org.opensaml.ws.security.SecurityPolicyException, java.util.zip.DataFormatException
+  {
     AuthnRequest samlRequest = null;
     
+    System.out.println("HttpHandler:decodeSAMLRequest");
+    if (log.isDebugEnabled()) {
+      log.debug("HttpHandler:decodeSAMLRequest");
+      }
     // First see whether we have a GET or POST so we know where to look for the data
     if (request.getMethod().equalsIgnoreCase("GET") == true) {
+      System.out.println("HttpHandler:decodeSAMLRequest - Found GET");
+      if (log.isDebugEnabled()) {
+        log.debug("HttpHandler:decodeSAMLRequest - Found GET");
+        }
       HTTPRedirectDeflateDecoder decode = new HTTPRedirectDeflateDecoder();
       decode.setParserPool( new BasicParserPool() );
       decode.setRequest(request);
@@ -88,12 +102,27 @@ public class HttpHandler {
       samlRequest = (AuthnRequest) decode.getSAMLMessage();
       // Now save it as a String in case we need it later
       byte [] b = Base64.decode(request.getParameter(REQUEST_PARAM));
+      byte [] i = new byte[ b.length * 3];
       xmlSAMLRequest = new String(b);
+      java.util.zip.Inflater inflater = new java.util.zip.Inflater(true);
+      inflater.setInput(b);
+      inflater.inflate(i);
+      xmlSAMLRequest = new String(i);
+      
+
+//            ByteArrayInputStream encodedMessage = new ByteArrayInputStream(message.getBytes());
+//            Base64.InputStream base64In = new Base64.InputStream(encodedMessage);
+//            InflaterInputStream inflater = new InflaterInputStream(base64In, new Inflater(true));
+      
 
       // Now save the Relay State as an encoded value. We only return this
       // to the SP, so no need to Base64 decode it.
       relayState = decode.getRelayState();
     } else if (request.getMethod().equalsIgnoreCase("POST") == true) {
+      System.out.println("HttpHandler:decodeSAMLRequest - Found POST");
+      if (log.isDebugEnabled()) {
+        log.debug("HttpHandler:decodeSAMLRequest - Found POST");
+        }
       HTTPPostDecoder decode = new HTTPPostDecoder();
       decode.setParserPool( new BasicParserPool() );
       decode.setRequest(request);
