@@ -84,6 +84,7 @@ public class RedirectHandler extends AbstractHttpHandler {
     
     // build an AuthnRequest object
     AuthnRequestImpl auth = buildAuthnRequest();
+    auth.setProtocolBinding( org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder.BINDING_URI );
 
     // Now we must marshall the object for the transfer over the wire.
     Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(auth);
