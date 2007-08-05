@@ -80,11 +80,10 @@ public class RedirectHandler extends AbstractHttpHandler {
    *
    */
   public void sendSAMLRedirect(HttpServletResponse response) throws org.opensaml.xml.io.MarshallingException, BindingException, IOException {
-    String samlRequest;
-    
     // build an AuthnRequest object
     AuthnRequestImpl auth = buildAuthnRequest();
     auth.setProtocolBinding( org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder.BINDING_URI );
+    
 
     // Now we must marshall the object for the transfer over the wire.
     Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(auth);
@@ -113,8 +112,6 @@ public class RedirectHandler extends AbstractHttpHandler {
    * @return The SAML Request as XML.
    */
   public String createSAMLRedirect() throws org.opensaml.xml.io.MarshallingException, BindingException, IOException {
-    String samlRequest;
-    
     // build an AuthnRequest object
     AuthnRequestImpl auth = buildAuthnRequest();
     auth.setProtocolBinding( org.opensaml.saml2.binding.encoding.HTTPRedirectDeflateEncoder.BINDING_URI );
