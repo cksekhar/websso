@@ -56,6 +56,8 @@ public class PostHandler extends AbstractHttpHandler {
    */
   public String createSAMLRequest() throws org.opensaml.xml.io.MarshallingException {
     AuthnRequest auth = buildAuthnRequest();
+    auth.setProtocolBinding( org.opensaml.saml2.binding.encoding.HTTPPostEncoder.BINDING_URI );
+    
     return createSAMLRequest(auth);
   }
   /*
