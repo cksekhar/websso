@@ -75,10 +75,9 @@ public class RedirectHandler extends AbstractHttpHandler {
   }
   
   /*
-   * Create a fully formed DEFLATEd and BASE64 representation of the SAML Request. The return value
-   * is the value to place in the redirect including the URL and parameters.
+   * Create a fully formed DEFLATEd and BASE64 representation of the SAML Request. This
+   * method submits the response to the client directly.
    *
-   * @return The full redirect URL.
    */
   public void sendSAMLRedirect(HttpServletResponse response) throws org.opensaml.xml.io.MarshallingException, BindingException, IOException {
     String samlRequest;
@@ -105,6 +104,29 @@ public class RedirectHandler extends AbstractHttpHandler {
     response.sendRedirect(redirectURL);
     
     return;
+  }
+  
+  /*
+   * Create a fully formed SAML Request.
+   *
+   * @return The SAML Request as XML.
+   */
+  public String createSAMLRedirect(HttpServletResponse response) throws org.opensaml.xml.io.MarshallingException, BindingException, IOException {
+    String samlRequest;
+    
+    // build an AuthnRequest object
+    AuthnRequestImpl auth = buildAuthnRequest();
+
+    // Now we must marshall the object for the transfer over the wire.
+    Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(auth);
+    Element authDOM = marshaller.marshall(auth);
+    // We use a StringWriter to produce our XML output. This gets us XML where
+    // the encoding is UTF-8. We must have UTF-8 or bad things happen.
+    StringWriter rspWrt = new StringWriter();
+    XMLHelper.writeNode(authDOM, rspWrt);
+    String messageXML = rspWrt.toString();
+
+    return messageXML;
   }
   
   /**
