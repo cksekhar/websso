@@ -173,7 +173,7 @@ public class SAMLResponse {
     
     rsp.setDestination( authnRequest.getAssertionConsumerServiceURL() );
     DateTime ts = new DateTime();
-    rsp.setID("acmeidp:" + ts.getMillis());
+    rsp.setID("acmeidp" + ts.getMillis());
     rsp.setInResponseTo( authnRequest.getID() );
     rsp.setVersion(SAMLVersion.VERSION_20);
     DateTime dt = new DateTime();
@@ -204,7 +204,7 @@ public class SAMLResponse {
     assertion.setIssueInstant(dt);
     assertion.setVersion(SAMLVersion.VERSION_20);
     ts = new DateTime();
-    assertion.setID("acmeidp:" + ts.getMillis());
+    assertion.setID("acmeidp" + ts.getMillis());
     // Add the Issuer to the Assertion
     // Build the Issuer object
     Issuer issuer2 = issuerBuilder.buildObject();
