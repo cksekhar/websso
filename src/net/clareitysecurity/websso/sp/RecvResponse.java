@@ -124,7 +124,10 @@ public class RecvResponse {
     decode.setRequest(request);
     decode.decode();
     relayState = decode.getRelayState();
-    relayState = new String(Base64.decode(relayState));
+    // Only decode the relay state if there is one
+    if ((relayState != null) && (relayState.equalsIgnoreCase("") == false)) {
+      relayState = new String(Base64.decode(relayState));
+    }
     
     // Use the OpenSAML Configuration singleton to get a builder factory object
     XMLObjectBuilderFactory builderFactory = org.opensaml.Configuration.getBuilderFactory();
