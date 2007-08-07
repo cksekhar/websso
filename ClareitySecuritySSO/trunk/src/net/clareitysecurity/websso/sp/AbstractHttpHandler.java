@@ -44,16 +44,21 @@ import org.w3c.dom.Element;
  */
 public abstract class AbstractHttpHandler {
   
+  public static final String
+    REDIRECT_BINDING = org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder.BINDING_URI,
+    POST_BINDING = org.opensaml.saml2.binding.encoding.HTTPPostEncoder.BINDING_URI;
+  
   protected String
       issuerName,
       providerName,
       actionURL,
-      assertionConsumerServiceURL;
+      assertionConsumerServiceURL,
+      bindingUriFormat;
   protected boolean
       forceReAuthentication;
   
   /*
-   * The IssuerName is the unique identifier value of your application.
+   * The IssuerName is the unique identifier value of your server.
    */
   public void setIssuerName(String newIssuerName) {
     issuerName = newIssuerName;
@@ -119,6 +124,20 @@ public abstract class AbstractHttpHandler {
   public boolean getForceReAuthentication() {
     return forceReAuthentication;
   }
+  /*
+   * Set the protocol binding format. This is how the Idp returns the SAML Response
+   * to the SP. Supported is Redirect and POST.
+   */
+  public void setBindindUriFormat(String newBindingUriFormat) {
+    bindingUriFormat = newBindingUriFormat;
+  }
+  /*
+   * Get the current value of the binding format. This is how the Idp returns the
+   * SAML Response to the SP.
+   */
+  public String getBindingUriFormat() {
+    return bindingUriFormat;
+  }
   
   /*
    * Create the AbstractHttpHandler object for SP usage.
@@ -127,6 +146,7 @@ public abstract class AbstractHttpHandler {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
     forceReAuthentication = false;
+    this.bindingUriFormat = this.POST_BINDING;
   }
   
   public AuthnRequestImpl buildAuthnRequest() {
@@ -147,6 +167,7 @@ public abstract class AbstractHttpHandler {
     auth.setProviderName(providerName);
     auth.setAssertionConsumerServiceURL(assertionConsumerServiceURL);
     auth.setDestination(actionURL);
+    auth.setProtocolBinding( getBindingUriFormat() );
     // Only add the parameter if it is true.
     if (forceReAuthentication == true) {
       auth.setForceAuthn(forceReAuthentication);

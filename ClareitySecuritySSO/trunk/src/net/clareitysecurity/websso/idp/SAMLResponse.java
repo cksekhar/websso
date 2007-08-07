@@ -51,13 +51,25 @@ import org.w3c.dom.Element;
  */
 public class SAMLResponse {
   
+  public static final String
+      UNSPECIFIED = NameIDType.UNSPECIFIED,
+      EMAIL = NameIDType.EMAIL,
+      X509_SUBJECT = NameIDType.X509_SUBJECT,
+      WIN_DOMAIN_QUALIFIED = NameIDType.WIN_DOMAIN_QUALIFIED,
+      KERBEROS = NameIDType.KERBEROS,
+      ENTITY = NameIDType.ENTITY,
+      PERSISTENT = NameIDType.PERSISTENT,
+      TRANSIENT = NameIDType.TRANSIENT,
+      SUBJECT_URI_BEARER = "urn:oasis:names:tc:SAML:2.0:cm:bearer";
+  
   private AuthnRequest
     authnRequest;
   private String
     issuerName,
     loginId,
     actionURL,
-    responseXML;
+    responseXML,
+    nameIdFormat;
   private PrivateKeyCache
     privateKeyCache;
   private boolean
@@ -111,6 +123,12 @@ public class SAMLResponse {
   public boolean getSignAssertion() {
     return signAssertion;
   }
+  public void setNameIdFormat(String newNameIdType) {
+    nameIdFormat = newNameIdType;
+  }
+  public String getNameIdFormat() {
+    return nameIdFormat;
+  }
   /*
    * Create the SAMLResponse object for Idp usage.
    */
@@ -118,20 +136,21 @@ public class SAMLResponse {
     // do the bootstrap thing and make sure the library is happy
     org.opensaml.DefaultBootstrap.bootstrap();
     privateKeyCache = null;
-    signAssertion = false;
+    signAssertion = true;
+    nameIdFormat = this.UNSPECIFIED;
   }
   
-  public Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
+  public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
     org.opensaml.xml.signature.impl.SignatureImpl signature = null;
     org.opensaml.xml.security.x509.BasicX509Credential credential = null;
     
-    System.out.println("Building Response object ...");
+    //System.out.println("Building Response object ...");
     // Use the OpenSAML Configuration singleton to get a builder factory object
     XMLObjectBuilderFactory builderFactory = org.opensaml.Configuration.getBuilderFactory();
     
     // Set up the signing credentials if we have been given them.
     if (privateKeyCache != null) {
-      System.out.println("Configuring signature ...");
+      //System.out.println("Configuring signature ...");
       try {
       org.opensaml.xml.signature.impl.SignatureBuilder signatureBuilder = new org.opensaml.xml.signature.impl.SignatureBuilder();
       signature = signatureBuilder.buildObject();
@@ -139,12 +158,12 @@ public class SAMLResponse {
       credential.setPrivateKey(privateKeyCache.getPrivateKey());
       signature.setSigningCredential(credential);
       signature.setSignatureAlgorithm( SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1 );
-      signature.setCanonicalizationAlgorithm( SignatureConstants.ALGO_ID_C14N_EXCL_WITH_COMMENTS );
+      signature.setCanonicalizationAlgorithm( SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS );
       } catch (Exception e) {
-        System.out.println("Caught exception configuring signature");
+        //System.out.println("Caught exception configuring signature");
         e.printStackTrace();
       }
-      System.out.println("Finished Configuring signature ...");
+      //System.out.println("Finished Configuring signature ...");
     }
 
     // we must now build the SAMLResponse object to redirect the user back to the SP with
@@ -198,7 +217,7 @@ public class SAMLResponse {
     // Create the NameID
     NameIDBuilder nidb = (NameIDBuilder) builderFactory.getBuilder(NameID.DEFAULT_ELEMENT_NAME);
     NameID nid = nidb.buildObject();
-    nid.setFormat(NameIDType.UNSPECIFIED);
+    nid.setFormat( getNameIdFormat() );
     nid.setValue(loginId);
     // Add the NameID to the subject
     subject.setNameID(nid);
@@ -207,6 +226,7 @@ public class SAMLResponse {
     SubjectConfirmationBuilder subjectConfirmationBuilder =
       (SubjectConfirmationBuilder) builderFactory.getBuilder(SubjectConfirmation.DEFAULT_ELEMENT_NAME);
     SubjectConfirmation subjectConfirmation = subjectConfirmationBuilder.buildObject();
+    subjectConfirmation.setMethod( this.SUBJECT_URI_BEARER );
     
     // Now the Conditions that are allowed
     ConditionsBuilder conditionsBuilder = (ConditionsBuilder) builderFactory.getBuilder(Conditions.DEFAULT_ELEMENT_NAME);
@@ -218,7 +238,7 @@ public class SAMLResponse {
     // Allow up to 5 minutes in the future
     notAfter = dt.plus( 1000 * 60 * 5 );
     conditions.setNotOnOrAfter(notAfter);
-    //assertion.setConditions(conditions);
+    assertion.setConditions(conditions);
     
     // Create the SubjectConfirmationData element
     SubjectConfirmationDataBuilder subjectConfirmationDataBuilder =
@@ -260,9 +280,15 @@ public class SAMLResponse {
     // Sign the assertion if asked to do so.
     org.opensaml.common.impl.SAMLObjectContentReference socr;
     if ((signAssertion == true) && (signature != null)) {
-      System.out.println("Signing assertion ...");
+      //System.out.println("Signing assertion ...");
       socr = new org.opensaml.common.impl.SAMLObjectContentReference(assertion);
+      socr.getTransforms().clear();
+      boolean b = socr.getTransforms().add(SignatureConstants.TRANSFORM_ENVELOPED_SIGNATURE);
+      System.out.println("add transform: [" + SignatureConstants.TRANSFORM_ENVELOPED_SIGNATURE + "] " + b);
+      b = socr.getTransforms().add(SignatureConstants.TRANSFORM_C14N_EXCL_OMIT_COMMENTS);
+      System.out.println("add transform: [" + SignatureConstants.TRANSFORM_C14N_EXCL_OMIT_COMMENTS + "] " + b);
       signature.getContentReferences().add(socr);
+      //signature.
       assertion.setSignature(signature);
       // Get the marshaller factory
       MarshallerFactory marshallerFactory = org.opensaml.Configuration.getMarshallerFactory();
@@ -275,7 +301,7 @@ public class SAMLResponse {
       }
       // Now sign it
       org.opensaml.xml.signature.Signer.signObject(signature);
-      System.out.print("Assertion is now signed ...");
+      //System.out.print("Assertion is now signed ...");
     }
     
     return rsp;
@@ -286,7 +312,7 @@ public class SAMLResponse {
    * @return The SAML message as XML.
    */
   public String createSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
-    Response rsp = getSuccessResponse();
+    org.opensaml.saml2.core.Response rsp = getSuccessResponse();
     return createSuccessResponse(rsp);
   }
   
@@ -295,7 +321,7 @@ public class SAMLResponse {
    * @param rsp The Response object to create the XML from.
    * @return The SAML message as XML.
    */
-  public String createSuccessResponse(Response rsp) throws org.opensaml.xml.io.MarshallingException {
+  public String createSuccessResponse(org.opensaml.saml2.core.Response rsp) throws org.opensaml.xml.io.MarshallingException {
     // Now we must build our representation to put into the html form to be submitted to the idp
     Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(rsp);
     Element authDOM = marshaller.marshall(rsp);
