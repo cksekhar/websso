@@ -177,7 +177,7 @@ public abstract class AbstractHttpHandler {
     auth.setVersion(org.opensaml.common.SAMLVersion.VERSION_20);
     DateTime dt = new DateTime();
     auth.setIssueInstant(dt);
-    auth.setID("acmemls:" + dt.getMillis());
+    auth.setID("acmemls" + dt.getMillis());
 
     return auth;
   }
