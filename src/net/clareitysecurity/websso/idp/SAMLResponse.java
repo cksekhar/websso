@@ -284,9 +284,9 @@ public class SAMLResponse {
       socr = new org.opensaml.common.impl.SAMLObjectContentReference(assertion);
       socr.getTransforms().clear();
       boolean b = socr.getTransforms().add(SignatureConstants.TRANSFORM_ENVELOPED_SIGNATURE);
-      System.out.println("add transform: [" + SignatureConstants.TRANSFORM_ENVELOPED_SIGNATURE + "] " + b);
+      //System.out.println("add transform: [" + SignatureConstants.TRANSFORM_ENVELOPED_SIGNATURE + "] " + b);
       b = socr.getTransforms().add(SignatureConstants.TRANSFORM_C14N_EXCL_OMIT_COMMENTS);
-      System.out.println("add transform: [" + SignatureConstants.TRANSFORM_C14N_EXCL_OMIT_COMMENTS + "] " + b);
+      //System.out.println("add transform: [" + SignatureConstants.TRANSFORM_C14N_EXCL_OMIT_COMMENTS + "] " + b);
       signature.getContentReferences().add(socr);
       //signature.
       assertion.setSignature(signature);
