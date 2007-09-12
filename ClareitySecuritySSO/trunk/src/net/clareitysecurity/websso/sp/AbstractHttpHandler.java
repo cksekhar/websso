@@ -45,8 +45,8 @@ import org.w3c.dom.Element;
 public abstract class AbstractHttpHandler {
   
   public static final String
-    REDIRECT_BINDING = org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder.BINDING_URI,
-    POST_BINDING = org.opensaml.saml2.binding.encoding.HTTPPostEncoder.BINDING_URI;
+    REDIRECT_BINDING = SAMLConstants.SAML2_REDIRECT_BINDING_URI,
+    POST_BINDING = SAMLConstants.SAML2_POST_BINDING_URI;
   
   protected String
       issuerName,

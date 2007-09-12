@@ -31,6 +31,9 @@ import org.opensaml.saml2.core.*;
 import org.opensaml.saml2.core.impl.*;
 import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
 
+import org.opensaml.ws.message.BaseMessageContext;
+import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
+
 import org.opensaml.xml.io.*;
 import org.opensaml.xml.parse.BasicParserPool;
 import org.opensaml.xml.util.Base64;
@@ -48,6 +51,15 @@ import org.w3c.dom.Element;
  * @author Paul Hethmon
  */
 public class RecvResponse {
+  
+  /** HTTP request param name for SAML request. */
+  public static final String REQUEST_PARAM = "SAMLRequest";
+
+  /** HTTP request param name for SAML response. */
+  public static final String RESPONSE_PARAM = "SAMLResponse";
+
+  /** HTTP request param name for relay state. */
+  public static final String RELAY_STATE_PARAM = "RelayState";
   
   protected String
       relayState,
@@ -115,15 +127,21 @@ public class RecvResponse {
   
   public void processRequest(HttpServletRequest request) 
     throws org.opensaml.xml.io.MarshallingException, org.opensaml.common.binding.BindingException, 
-      org.opensaml.ws.security.SecurityPolicyException, org.opensaml.xml.validation.ValidationException
+      org.opensaml.ws.security.SecurityPolicyException, org.opensaml.xml.validation.ValidationException,
+      org.opensaml.ws.message.MessageException
   {
     java.util.List<Assertion> assertionsList;
     
-    HTTPPostDecoder decode = new HTTPPostDecoder();
-    decode.setParserPool( new BasicParserPool() );
-    decode.setRequest(request);
-    decode.decode();
-    relayState = decode.getRelayState();
+    HTTPPostDecoder decode = new HTTPPostDecoder( new BasicParserPool() );
+//    decode.setParserPool( new BasicParserPool() );
+    HttpServletRequestAdapter adapter = new HttpServletRequestAdapter(request);
+    BaseMessageContext context = new BaseMessageContext();
+    context.setInboundMessageTransport(adapter);
+    decode.decode(context);
+    relayState = adapter.getParameterValue(this.RELAY_STATE_PARAM); // decode.getRelayState();
+//    decode.setRequest(request);
+//    decode.decode();
+//    relayState = decode.getRelayState();
     // Only decode the relay state if there is one
     if ((relayState != null) && (relayState.equalsIgnoreCase("") == false)) {
       relayState = new String(Base64.decode(relayState));
@@ -134,7 +152,8 @@ public class RecvResponse {
     // Get a Response object
     ResponseBuilder rspBldr = (ResponseBuilder) builderFactory.getBuilder(Response.DEFAULT_ELEMENT_NAME);
     Response rsp = rspBldr.buildObject();
-    rsp = (Response) decode.getSAMLMessage();
+//    rsp = (Response) decode.getSAMLMessage();
+    rsp = (Response) context.getInboundMessage();
     
     // Look in the SAML Response to pull out the Subject information
     Assertion assertion;
