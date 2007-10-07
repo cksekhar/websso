@@ -30,8 +30,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.opensaml.saml2.core.*;
 import org.opensaml.saml2.core.impl.*;
 import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
+import org.opensaml.common.binding.BasicSAMLMessageContext;
 
-import org.opensaml.ws.message.BaseMessageContext;
+//import org.opensaml.ws.message.BaseMessageContext;
 import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
 
 import org.opensaml.xml.io.*;
@@ -133,15 +134,11 @@ public class RecvResponse {
     java.util.List<Assertion> assertionsList;
     
     HTTPPostDecoder decode = new HTTPPostDecoder( new BasicParserPool() );
-//    decode.setParserPool( new BasicParserPool() );
     HttpServletRequestAdapter adapter = new HttpServletRequestAdapter(request);
-    BaseMessageContext context = new BaseMessageContext();
+    BasicSAMLMessageContext context = new BasicSAMLMessageContext();
     context.setInboundMessageTransport(adapter);
     decode.decode(context);
     relayState = adapter.getParameterValue(this.RELAY_STATE_PARAM); // decode.getRelayState();
-//    decode.setRequest(request);
-//    decode.decode();
-//    relayState = decode.getRelayState();
     // Only decode the relay state if there is one
     if ((relayState != null) && (relayState.equalsIgnoreCase("") == false)) {
       relayState = new String(Base64.decode(relayState));
@@ -152,7 +149,6 @@ public class RecvResponse {
     // Get a Response object
     ResponseBuilder rspBldr = (ResponseBuilder) builderFactory.getBuilder(Response.DEFAULT_ELEMENT_NAME);
     Response rsp = rspBldr.buildObject();
-//    rsp = (Response) decode.getSAMLMessage();
     rsp = (Response) context.getInboundMessage();
     
     // Look in the SAML Response to pull out the Subject information
