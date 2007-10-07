@@ -29,10 +29,10 @@ import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.opensaml.xml.parse.*;
 import org.opensaml.saml2.metadata.*;
 import org.opensaml.saml2.metadata.impl.*;
-import org.opensaml.xml.signature.KeyInfo;
 import org.opensaml.xml.signature.*;
 import org.opensaml.xml.signature.impl.*;
 import org.opensaml.xml.signature.SignatureValidator;
+import org.opensaml.xml.security.keyinfo.KeyInfoHelper;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
