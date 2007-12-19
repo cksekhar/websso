@@ -24,6 +24,8 @@
 
 package net.clareitysecurity.websso.metadata;
 
+import org.apache.log4j.Logger;
+
 import org.opensaml.saml2.metadata.provider.FileBackedHTTPMetadataProvider;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.opensaml.xml.parse.*;
@@ -52,6 +54,12 @@ import java.security.spec.EncodedKeySpec;
  * @author Paul Hethmon
  */
 public class MetaDataCache {
+  /** Class logger. */
+  private final Logger log = Logger.getLogger(MetaDataCache.class);
+  
+  private static boolean bootstrap = false;
+  private static int bootcount = 0;
+  
   protected String
       metaUrl,
       metaFile;
@@ -141,7 +149,14 @@ public class MetaDataCache {
   /** Creates a new instance of MetaDataCache */
   public MetaDataCache() throws org.opensaml.xml.ConfigurationException {
     // Bootstrap the OpenSAML libraries
-    org.opensaml.DefaultBootstrap.bootstrap();
+    if (bootstrap == false) {
+      org.opensaml.DefaultBootstrap.bootstrap();
+      bootstrap = true;
+      if (log.isInfoEnabled()) {
+        bootcount++;
+        log.info("MetaDataCache.java (line 150) bootstrap has been called. [" + bootcount + "]");
+      }
+    }
     // Create a parser pool for later use
     parser = new BasicParserPool();
     // Choose to use the Bouncy Castle JCE provider most often

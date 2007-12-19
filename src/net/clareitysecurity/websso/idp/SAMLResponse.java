@@ -24,6 +24,7 @@ package net.clareitysecurity.websso.idp;
 
 import java.io.StringWriter;
 import org.joda.time.DateTime;
+import org.apache.log4j.Logger;
 
 import org.apache.xml.security.signature.XMLSignature;
 
@@ -51,7 +52,11 @@ import org.w3c.dom.Element;
  */
 public class SAMLResponse {
   
+  /** Class logger. */
+  private final Logger log = Logger.getLogger(SAMLResponse.class);
+  
   private static boolean bootstrap = false;
+  private static int bootcount = 0;
   
   public static final String
       UNSPECIFIED = NameIDType.UNSPECIFIED,
@@ -139,6 +144,10 @@ public class SAMLResponse {
     if (bootstrap == false) {
       org.opensaml.DefaultBootstrap.bootstrap();
       bootstrap = true;
+      if (log.isInfoEnabled()) {
+        bootcount++;
+        log.info("SAMLResponse.java (line 147) bootstrap has been called. [" + bootcount + "]");
+      }
     }
     privateKeyCache = null;
     signAssertion = true;
