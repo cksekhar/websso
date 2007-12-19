@@ -44,6 +44,8 @@ import org.w3c.dom.Element;
  */
 public abstract class AbstractHttpHandler {
   
+  private static boolean bootstrap = false;
+  
   public static final String
     REDIRECT_BINDING = SAMLConstants.SAML2_REDIRECT_BINDING_URI,
     POST_BINDING = SAMLConstants.SAML2_POST_BINDING_URI;
@@ -144,7 +146,10 @@ public abstract class AbstractHttpHandler {
    */
   public AbstractHttpHandler() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
-    org.opensaml.DefaultBootstrap.bootstrap();
+    if (bootstrap == false) {
+      org.opensaml.DefaultBootstrap.bootstrap();
+      bootstrap = true;
+    }
     forceReAuthentication = false;
     this.bindingUriFormat = this.POST_BINDING;
   }

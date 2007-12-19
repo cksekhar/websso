@@ -53,6 +53,8 @@ import org.w3c.dom.Element;
  */
 public class RecvResponse {
   
+  private static boolean bootstrap = false;
+  
   /** HTTP request param name for SAML request. */
   public static final String REQUEST_PARAM = "SAMLRequest";
 
@@ -123,7 +125,10 @@ public class RecvResponse {
   /** Creates a new instance of RecvResponse */
   public RecvResponse() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
-    org.opensaml.DefaultBootstrap.bootstrap();
+    if (bootstrap == false) {
+      org.opensaml.DefaultBootstrap.bootstrap();
+      bootstrap = true;
+    }
   }
   
   public void processRequest(HttpServletRequest request) 

@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class HttpHandler {
 
+  private static boolean bootstrap = false;
   /** Class logger. */
   private final Logger log = Logger.getLogger(HttpHandler.class);
   
@@ -78,7 +79,10 @@ public class HttpHandler {
    */
   public HttpHandler() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
-    org.opensaml.DefaultBootstrap.bootstrap();
+    if (bootstrap == false) {
+      org.opensaml.DefaultBootstrap.bootstrap();
+      bootstrap = true;
+    }
   }
   
   public AuthnRequest decodeSAMLRequest(HttpServletRequest request) 

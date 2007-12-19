@@ -51,6 +51,8 @@ import org.w3c.dom.Element;
  */
 public class SAMLResponse {
   
+  private static boolean bootstrap = false;
+  
   public static final String
       UNSPECIFIED = NameIDType.UNSPECIFIED,
       EMAIL = NameIDType.EMAIL,
@@ -134,7 +136,10 @@ public class SAMLResponse {
    */
   public SAMLResponse() throws org.opensaml.xml.ConfigurationException {
     // do the bootstrap thing and make sure the library is happy
-    org.opensaml.DefaultBootstrap.bootstrap();
+    if (bootstrap == false) {
+      org.opensaml.DefaultBootstrap.bootstrap();
+      bootstrap = true;
+    }
     privateKeyCache = null;
     signAssertion = true;
     nameIdFormat = this.UNSPECIFIED;
