@@ -26,6 +26,7 @@ package net.clareitysecurity.websso.sp;
 
 import java.io.StringWriter;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.log4j.Logger;
 
 import org.opensaml.saml2.core.*;
 import org.opensaml.saml2.core.impl.*;
@@ -53,7 +54,11 @@ import org.w3c.dom.Element;
  */
 public class RecvResponse {
   
+  /** Class logger. */
+  private final Logger log = Logger.getLogger(RecvResponse.class);
+  
   private static boolean bootstrap = false;
+  private static int bootcount = 0;
   
   /** HTTP request param name for SAML request. */
   public static final String REQUEST_PARAM = "SAMLRequest";
@@ -128,6 +133,10 @@ public class RecvResponse {
     if (bootstrap == false) {
       org.opensaml.DefaultBootstrap.bootstrap();
       bootstrap = true;
+      if (log.isInfoEnabled()) {
+        bootcount++;
+        log.info("RecvResponse.java (line 136) bootstrap has been called. [" + bootcount + "]");
+      }
     }
   }
   

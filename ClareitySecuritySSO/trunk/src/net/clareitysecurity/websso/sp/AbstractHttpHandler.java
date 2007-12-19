@@ -27,6 +27,7 @@ package net.clareitysecurity.websso.sp;
 
 //import java.io.StringWriter;
 import org.joda.time.DateTime;
+import org.apache.log4j.Logger;
 
 import org.opensaml.*;
 import org.opensaml.saml2.core.*;
@@ -44,7 +45,11 @@ import org.w3c.dom.Element;
  */
 public abstract class AbstractHttpHandler {
   
+  /** Class logger. */
+  private final Logger log = Logger.getLogger(AbstractHttpHandler.class);
+  
   private static boolean bootstrap = false;
+  private static int bootcount = 0;
   
   public static final String
     REDIRECT_BINDING = SAMLConstants.SAML2_REDIRECT_BINDING_URI,
@@ -149,6 +154,10 @@ public abstract class AbstractHttpHandler {
     if (bootstrap == false) {
       org.opensaml.DefaultBootstrap.bootstrap();
       bootstrap = true;
+      if (log.isInfoEnabled()) {
+        bootcount++;
+        log.info("AbstractHttpHandler.java (line 157) bootstrap has been called. [" + bootcount + "]");
+      }
     }
     forceReAuthentication = false;
     this.bindingUriFormat = this.POST_BINDING;

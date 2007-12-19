@@ -45,6 +45,7 @@ import javax.servlet.http.HttpServletRequest;
 public class HttpHandler {
 
   private static boolean bootstrap = false;
+  private static int bootcount = 0;
   /** Class logger. */
   private final Logger log = Logger.getLogger(HttpHandler.class);
   
@@ -82,6 +83,11 @@ public class HttpHandler {
     if (bootstrap == false) {
       org.opensaml.DefaultBootstrap.bootstrap();
       bootstrap = true;
+      if (log.isInfoEnabled()) {
+        bootcount++;
+        log.info("HttpHandler.java (line 86) bootstrap has been called. [" + bootcount + "]");
+      }
+        
     }
   }
   
