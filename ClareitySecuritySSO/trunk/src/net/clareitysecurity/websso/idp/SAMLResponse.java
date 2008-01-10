@@ -294,6 +294,7 @@ public class SAMLResponse {
     // Sign the assertion if asked to do so.
     org.opensaml.common.impl.SAMLObjectContentReference socr;
     if ((signAssertion == true) && (signature != null)) {
+/*      
       //System.out.println("Signing assertion ...");
       socr = new org.opensaml.common.impl.SAMLObjectContentReference(assertion);
       socr.getTransforms().clear();
@@ -301,8 +302,9 @@ public class SAMLResponse {
       //System.out.println("add transform: [" + SignatureConstants.TRANSFORM_ENVELOPED_SIGNATURE + "] " + b);
       b = socr.getTransforms().add(SignatureConstants.TRANSFORM_C14N_EXCL_OMIT_COMMENTS);
       //System.out.println("add transform: [" + SignatureConstants.TRANSFORM_C14N_EXCL_OMIT_COMMENTS + "] " + b);
-      signature.getContentReferences().add(socr);
+      //signature.getContentReferences().add(socr);
       //signature.
+*/
       assertion.setSignature(signature);
       // Get the marshaller factory
       MarshallerFactory marshallerFactory = org.opensaml.Configuration.getMarshallerFactory();
