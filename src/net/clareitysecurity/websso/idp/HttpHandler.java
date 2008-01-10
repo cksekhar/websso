@@ -93,7 +93,7 @@ public class HttpHandler {
   
   public AuthnRequest decodeSAMLRequest(HttpServletRequest request) 
     throws BindingException, org.opensaml.ws.security.SecurityPolicyException, java.util.zip.DataFormatException, 
-      org.opensaml.ws.message.MessageException
+      org.opensaml.ws.message.MessageException, org.opensaml.xml.security.SecurityException
   {
     AuthnRequest samlRequest = null;
     

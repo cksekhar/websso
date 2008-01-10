@@ -143,7 +143,7 @@ public class RecvResponse {
   public void processRequest(HttpServletRequest request) 
     throws org.opensaml.xml.io.MarshallingException, org.opensaml.common.binding.BindingException, 
       org.opensaml.ws.security.SecurityPolicyException, org.opensaml.xml.validation.ValidationException,
-      org.opensaml.ws.message.MessageException
+      org.opensaml.ws.message.MessageException, org.opensaml.xml.security.SecurityException
   {
     java.util.List<Assertion> assertionsList;
     
