@@ -42,6 +42,8 @@ import org.opensaml.xml.util.Base64;
 import org.opensaml.xml.util.XMLHelper;
 import org.opensaml.xml.security.SecurityHelper;
 import org.opensaml.xml.signature.*;
+import org.opensaml.xml.signature.impl.*;
+import org.opensaml.xml.security.keyinfo.KeyInfoHelper;
 
 import org.w3c.dom.Element;
 
@@ -79,6 +81,8 @@ public class SAMLResponse {
     nameIdFormat;
   private PrivateKeyCache
     privateKeyCache;
+  private PublicKeyCache
+    publicKeyCache;
   private boolean
     signAssertion;
   
@@ -124,6 +128,12 @@ public class SAMLResponse {
   public PrivateKeyCache getPrivateKeyCache() {
     return privateKeyCache;
   }
+  public void setPublicKeyCache(PublicKeyCache newPublicKeyCache) {
+    publicKeyCache = newPublicKeyCache;
+  }
+  public PublicKeyCache getPublicKeyCache() {
+    return publicKeyCache;
+  }
   public void setSignAssertion(boolean newSignAssertion) {
     signAssertion = newSignAssertion;
   }
@@ -150,6 +160,7 @@ public class SAMLResponse {
       }
     }
     privateKeyCache = null;
+    publicKeyCache = null;
     signAssertion = true;
     nameIdFormat = this.UNSPECIFIED;
   }
@@ -157,6 +168,7 @@ public class SAMLResponse {
   public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
     org.opensaml.xml.signature.impl.SignatureImpl signature = null;
     org.opensaml.xml.security.x509.BasicX509Credential credential = null;
+    org.opensaml.xml.signature.impl.KeyInfoImpl keyInfo = null;
     
     //System.out.println("Building Response object ...");
     // Use the OpenSAML Configuration singleton to get a builder factory object
@@ -167,9 +179,21 @@ public class SAMLResponse {
       //System.out.println("Configuring signature ...");
       try {
       org.opensaml.xml.signature.impl.SignatureBuilder signatureBuilder = new org.opensaml.xml.signature.impl.SignatureBuilder();
+      
       signature = signatureBuilder.buildObject();
       credential = new org.opensaml.xml.security.x509.BasicX509Credential();
+      // Set the private key used to sign the messages
       credential.setPrivateKey(privateKeyCache.getPrivateKey());
+      // add the public key if we have it
+      if (publicKeyCache != null) {
+        credential.setPublicKey(publicKeyCache.getPublicKey());
+        // Now add a KeyInfo section to the signature so we can send our public certificate in it
+        KeyInfoBuilder keyInfoBuilder = new KeyInfoBuilder();
+        keyInfo = (KeyInfoImpl) keyInfoBuilder.buildObject();
+        KeyInfoHelper.addPublicKey(keyInfo, publicKeyCache.getPublicKey());
+        signature.setKeyInfo(keyInfo);
+        log.info("SAMLResponse.java (line 194) KeyInfo added to signature.");
+      }
       signature.setSigningCredential(credential);
       signature.setSignatureAlgorithm( SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1 );
       signature.setCanonicalizationAlgorithm( SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS );
@@ -187,7 +211,9 @@ public class SAMLResponse {
     
     rsp.setDestination( authnRequest.getAssertionConsumerServiceURL() );
     DateTime ts = new DateTime();
-    rsp.setID("acmeidp" + ts.getMillis());
+    // Only a single ID value because they must match within the Response
+    String id = "acmeidp" + ts.getMillis();
+    rsp.setID(id);
     rsp.setInResponseTo( authnRequest.getID() );
     rsp.setVersion(SAMLVersion.VERSION_20);
     DateTime dt = new DateTime();
@@ -218,7 +244,7 @@ public class SAMLResponse {
     assertion.setIssueInstant(dt);
     assertion.setVersion(SAMLVersion.VERSION_20);
     ts = new DateTime();
-    assertion.setID("acmeidp" + ts.getMillis());
+    assertion.setID(id);
     // Add the Issuer to the Assertion
     // Build the Issuer object
     Issuer issuer2 = issuerBuilder.buildObject();
