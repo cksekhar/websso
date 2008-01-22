@@ -47,7 +47,6 @@ import org.opensaml.xml.security.keyinfo.KeyInfoHelper;
 
 import org.w3c.dom.Element;
 
-
 /**
  *
  * @author Paul Hethmon
@@ -84,7 +83,31 @@ public class SAMLResponse {
   private PublicKeyCache
     publicKeyCache;
   private boolean
-    signAssertion;
+    signAssertion,
+    simpleSAMLphp;
+  
+  /*
+   * Set a boolean flag indicating you are talking to a PHP implementation
+   * called simpleSAMLphp. It is broke and requires that the Response ID value
+   * match exactly to the Reference URI value. What we do is prepend the Response
+   * ID value with a # symbol. URI already has it since it is a fragment 
+   * reference URI.
+   * @param b true means to adjust our Response output to work with simpleSAMLphp
+   */
+  public void setSimpleSAMLphp(boolean b) {
+    simpleSAMLphp = b;
+  }
+  /*
+   * Get a boolean flag indicating you are talking to a PHP implementation
+   * called simpleSAMLphp. It is broke and requires that the Response ID value
+   * match exactly to the Reference URI value. What we do is prepend the Response
+   * ID value with a # symbol. URI already has it since it is a fragment 
+   * reference URI.
+   * @return true means the Response output will be adjusted to work with simpleSAMLphp.
+   */
+  public boolean getSimpleSAMLphp() {
+    return simpleSAMLphp;
+  }
   
   public void setAuthnRequest(AuthnRequest newAuthnRequest) {
     authnRequest = newAuthnRequest;
@@ -156,13 +179,14 @@ public class SAMLResponse {
       bootstrap = true;
       if (log.isInfoEnabled()) {
         bootcount++;
-        log.info("SAMLResponse.java (line 147) bootstrap has been called. [" + bootcount + "]");
+        log.info("SAMLResponse.java (line 183) bootstrap has been called. [" + bootcount + "]");
       }
     }
     privateKeyCache = null;
     publicKeyCache = null;
     signAssertion = true;
     nameIdFormat = this.UNSPECIFIED;
+    simpleSAMLphp = false;
   }
   
   public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
@@ -190,9 +214,10 @@ public class SAMLResponse {
         // Now add a KeyInfo section to the signature so we can send our public certificate in it
         KeyInfoBuilder keyInfoBuilder = new KeyInfoBuilder();
         keyInfo = (KeyInfoImpl) keyInfoBuilder.buildObject();
-        KeyInfoHelper.addPublicKey(keyInfo, publicKeyCache.getPublicKey());
+        //KeyInfoHelper.addPublicKey(keyInfo, publicKeyCache.getPublicKey());
+        KeyInfoHelper.addCertificate(keyInfo, publicKeyCache.getX509Certificate());
         signature.setKeyInfo(keyInfo);
-        log.info("SAMLResponse.java (line 194) KeyInfo added to signature.");
+        if (log.isDebugEnabled()) log.debug("SAMLResponse.java (line 221) KeyInfo added to signature.");
       }
       signature.setSigningCredential(credential);
       signature.setSignatureAlgorithm( SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1 );
@@ -213,7 +238,12 @@ public class SAMLResponse {
     DateTime ts = new DateTime();
     // Only a single ID value because they must match within the Response
     String id = "acmeidp" + ts.getMillis();
-    rsp.setID(id);
+    if (simpleSAMLphp == false) {
+      rsp.setID(id);
+    } else {
+      rsp.setID("#" + id); // prepend with # to make us work with simpleSAMLphp
+      if (log.isDebugEnabled()) log.debug("SAMLResponse.java (line 246) simpleSAMLphp prepend set");
+    }
     rsp.setInResponseTo( authnRequest.getID() );
     rsp.setVersion(SAMLVersion.VERSION_20);
     DateTime dt = new DateTime();

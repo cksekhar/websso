@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.KeyFactory;
 import java.security.PublicKey;
+import java.security.cert.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.security.spec.*;
 import java.security.*;
@@ -47,7 +48,11 @@ public class PublicKeyCache {
   
   private String publicKeyEncoded;
   private RSAPublicKey publicKey;
+  private X509Certificate x509Cert;
   
+  public X509Certificate getX509Certificate() {
+    return x509Cert;
+  }
   /*
    * Set the BASE64 encoded value of the public key.
    * @param s The BASE64 encoded value.
@@ -76,6 +81,8 @@ public class PublicKeyCache {
    * @return The PublicKey object.
    */
   public PublicKey getPublicKey() {
+    return publicKey;
+/*    
     //RSAPublicKey publicKey = null;
     KeyFactory keyFactory;
     X509EncodedKeySpec pubSpec;
@@ -105,6 +112,7 @@ public class PublicKeyCache {
       ikse.printStackTrace();
       return null;
     }
+ */
   }
   
   /*
@@ -112,16 +120,26 @@ public class PublicKeyCache {
    * string in this object.
    * @param publicKeyFile An InputStream containing the PEM encoded public key.
    */
-  public void readPublicKey(InputStream publicKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
-    BufferedReader in = new BufferedReader(new InputStreamReader(publicKeyFile));
-    readPublicKey(in);
+  public void readPublicKey(InputStream publicKeyFile) throws java.io.FileNotFoundException, java.io.IOException,
+    java.security.cert.CertificateException {
+//    BufferedReader in = new BufferedReader(new InputStreamReader(publicKeyFile));
+    CertificateFactory cf;
+//    X509Certificate cert;
+//    RSAPublicKey k;
+    
+    cf = CertificateFactory.getInstance("X.509");
+    x509Cert = (X509Certificate) cf.generateCertificate(publicKeyFile);
+    publicKeyFile.close();
+    publicKey = (RSAPublicKey) x509Cert.getPublicKey();
+    
+//    readPublicKey(in);
   }
   /*
    * Read the public key from a PEM encoded file and store the encoded
    * string in this object.
    * @param publicKeyFile The file containing the PEM encoded public key.
    */
-  public void readPublicKey(String publicKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
+  private void readPublicKey(String publicKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
     // try to load a public key
     BufferedReader in = new BufferedReader(new FileReader(publicKeyFile));
     readPublicKey(in);
@@ -131,7 +149,7 @@ public class PublicKeyCache {
    * string in this object.
    * @param publicKeyFile A BufferedReader containing the PEM encoded public key.
    */
-  public void readPublicKey(BufferedReader publicKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
+  private void readPublicKey(BufferedReader publicKeyFile) throws java.io.FileNotFoundException, java.io.IOException {
     String
         line,
         encodedPublicKey;
