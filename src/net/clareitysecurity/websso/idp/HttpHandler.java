@@ -97,13 +97,13 @@ public class HttpHandler {
   {
     AuthnRequest samlRequest = null;
     
-    System.out.println("HttpHandler:decodeSAMLRequest");
+    //System.out.println("HttpHandler:decodeSAMLRequest");
     if (log.isDebugEnabled()) {
       log.debug("HttpHandler:decodeSAMLRequest");
       }
     // First see whether we have a GET or POST so we know where to look for the data
     if (request.getMethod().equalsIgnoreCase("GET") == true) {
-      System.out.println("HttpHandler:decodeSAMLRequest - Found GET");
+      //System.out.println("HttpHandler:decodeSAMLRequest - Found GET");
       if (log.isDebugEnabled()) {
         log.debug("HttpHandler:decodeSAMLRequest - Found GET");
         }
@@ -127,7 +127,7 @@ public class HttpHandler {
       // to the SP, so no need to Base64 decode it.
       relayState = adapter.getParameterValue(this.RELAY_STATE_PARAM);
     } else if (request.getMethod().equalsIgnoreCase("POST") == true) {
-      System.out.println("HttpHandler:decodeSAMLRequest - Found POST");
+      //System.out.println("HttpHandler:decodeSAMLRequest - Found POST");
       if (log.isDebugEnabled()) {
         log.debug("HttpHandler:decodeSAMLRequest - Found POST");
         }
