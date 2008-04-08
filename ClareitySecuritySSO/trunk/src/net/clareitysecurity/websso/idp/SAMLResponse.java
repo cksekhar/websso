@@ -23,6 +23,7 @@
 package net.clareitysecurity.websso.idp;
 
 import java.io.StringWriter;
+import java.util.Hashtable;
 import org.joda.time.DateTime;
 import org.apache.log4j.Logger;
 
@@ -58,6 +59,7 @@ public class SAMLResponse {
   
   private static boolean bootstrap = false;
   private static int bootcount = 0;
+  private static int assertionConsumerServiceCount = 100;
   
   public static final String
       UNSPECIFIED = NameIDType.UNSPECIFIED,
@@ -85,7 +87,28 @@ public class SAMLResponse {
   private boolean
     signAssertion,
     simpleSAMLphp;
+  private Hashtable
+    assertionConsumerService;
   
+  /**
+   * Add a URL and its index to the list of URLs to redirect the browser to.
+   * @param idx The index at which to add this URL. Corresponds to the AssertionConsumerServiceIndex in the SAMLRequest.
+   * @param url The fully qualified URL to redirect the browser to.
+   */
+    public void setAssertionConsumerService(int idx, String url) {
+    if (assertionConsumerService == null) assertionConsumerService = new Hashtable(assertionConsumerServiceCount);
+    assertionConsumerService.put(idx, url);
+    log.debug("Adding [" + url + "] at index [" + idx + "]");
+  }
+  
+  /**
+   * Get the specified URL at the given index.
+   * @param idx The index value to retrieve.
+   * @return The URL if present. If the index is not valid, a null value is returned.
+   */
+  public String getAssertionConsumerService(int idx) {
+    return (String) assertionConsumerService.get(idx);
+  }
   /*
    * Set a boolean flag indicating you are talking to a PHP implementation
    * called simpleSAMLphp. It is broke and requires that the Response ID value
@@ -179,7 +202,7 @@ public class SAMLResponse {
       bootstrap = true;
       if (log.isInfoEnabled()) {
         bootcount++;
-        log.info("SAMLResponse.java (line 183) bootstrap has been called. [" + bootcount + "]");
+        log.info("SAMLResponse.java - bootstrap has been called. [" + bootcount + "]");
       }
     }
     privateKeyCache = null;
@@ -187,6 +210,7 @@ public class SAMLResponse {
     signAssertion = true;
     nameIdFormat = this.UNSPECIFIED;
     simpleSAMLphp = false;
+    assertionConsumerService = null;
   }
   
   public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
@@ -217,7 +241,7 @@ public class SAMLResponse {
         //KeyInfoHelper.addPublicKey(keyInfo, publicKeyCache.getPublicKey());
         KeyInfoHelper.addCertificate(keyInfo, publicKeyCache.getX509Certificate());
         signature.setKeyInfo(keyInfo);
-        if (log.isDebugEnabled()) log.debug("SAMLResponse.java (line 221) KeyInfo added to signature.");
+        if (log.isDebugEnabled()) log.debug("SAMLResponse.java - KeyInfo added to signature.");
       }
       signature.setSigningCredential(credential);
       signature.setSignatureAlgorithm( SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1 );
@@ -234,7 +258,22 @@ public class SAMLResponse {
     ResponseBuilder rspBldr = (ResponseBuilder) builderFactory.getBuilder(org.opensaml.saml2.core.Response.DEFAULT_ELEMENT_NAME);
     org.opensaml.saml2.core.Response rsp = rspBldr.buildObject();
     
-    rsp.setDestination( authnRequest.getAssertionConsumerServiceURL() );
+    // Check for the URL to return the browser to.
+    if (authnRequest.getAssertionConsumerServiceURL() != null) {  // They sent a URL
+      rsp.setDestination( authnRequest.getAssertionConsumerServiceURL() );
+    } else if (authnRequest.getAssertionConsumerServiceIndex() > 0) {  // Specified by index instead
+      String u = getAssertionConsumerService(authnRequest.getAssertionConsumerServiceIndex());
+      if (u != null) {
+        log.debug("Setting Destination to [" + u + "]");
+        rsp.setDestination(u); // use the configured url at this index
+      } else {
+        log.debug("No Destination found. Using empty string.");
+        rsp.setDestination(""); // nothing to use
+      }
+    } else {
+        log.debug("No Index or URL found. Using empty string.");
+        rsp.setDestination(""); // nothing to use
+    }
     DateTime ts = new DateTime();
     // Only a single ID value because they must match within the Response
     String id = "acmeidp" + ts.getMillis();
@@ -242,7 +281,7 @@ public class SAMLResponse {
       rsp.setID(id);
     } else {
       rsp.setID("#" + id); // prepend with # to make us work with simpleSAMLphp
-      if (log.isDebugEnabled()) log.debug("SAMLResponse.java (line 246) simpleSAMLphp prepend set");
+      if (log.isDebugEnabled()) log.debug("SAMLResponse.java simpleSAMLphp prepend set");
     }
     rsp.setInResponseTo( authnRequest.getID() );
     rsp.setVersion(SAMLVersion.VERSION_20);
@@ -403,7 +442,8 @@ public class SAMLResponse {
     
     String samlResponse = new String(Base64.encodeBytes(responseXML.getBytes(), Base64.DONT_BREAK_LINES));
     
-    setActionURL(authnRequest.getAssertionConsumerServiceURL());
+    // Set the URL to where we resolved the destination to go to.
+    setActionURL(rsp.getDestination());
     
     return samlResponse;
   }
