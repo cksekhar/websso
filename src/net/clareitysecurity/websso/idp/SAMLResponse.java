@@ -87,6 +87,8 @@ public class SAMLResponse {
   private boolean
     signAssertion,
     simpleSAMLphp;
+  private int
+    minutes;
   private Hashtable
     assertionConsumerService;
   
@@ -109,6 +111,24 @@ public class SAMLResponse {
   public String getAssertionConsumerService(int idx) {
     return (String) assertionConsumerService.get(idx);
   }
+  /*
+   * Set the number of minutes a Response will be valid for. Default value
+   * is 5 minutes. Values less than zero will be set to 1 minute.
+   * @param i The number of minutes.
+   */
+  public void setMinutes(int i) {
+    minutes = i;
+    if (minutes < 0) minutes = 1;
+  }
+  
+  /*
+   * Get the number of minutes the Response will be valid for.
+   * @return The number of minutes.
+   */
+  public int getMinutes() {
+    return minutes;
+  }
+  
   /*
    * Set a boolean flag indicating you are talking to a PHP implementation
    * called simpleSAMLphp. It is broke and requires that the Response ID value
@@ -210,6 +230,7 @@ public class SAMLResponse {
     signAssertion = true;
     nameIdFormat = this.UNSPECIFIED;
     simpleSAMLphp = false;
+    minutes = 5;
     assertionConsumerService = null;
   }
   
@@ -342,10 +363,10 @@ public class SAMLResponse {
     Conditions conditions = conditionsBuilder.buildObject();
     // Build the starting time window value, we allow now less 1 minute
     DateTime notBefore, notAfter;
-    notBefore = dt.minus( 1000 * 60 );
+    notBefore = dt.minus( 1000 * 10 );  // 10 seconds in the past is all we allow.
     conditions.setNotBefore(notBefore);
     // Allow up to 5 minutes in the future
-    notAfter = dt.plus( 1000 * 60 * 5 );
+    notAfter = dt.plus( 1000 * 60 * this.getMinutes() ); // minutes into the future defaults to 5
     conditions.setNotOnOrAfter(notAfter);
     assertion.setConditions(conditions);
     
