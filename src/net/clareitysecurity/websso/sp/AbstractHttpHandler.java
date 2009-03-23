@@ -26,18 +26,17 @@
 package net.clareitysecurity.websso.sp;
 
 //import java.io.StringWriter;
-import org.joda.time.DateTime;
 import org.apache.log4j.Logger;
-
-import org.opensaml.*;
-import org.opensaml.saml2.core.*;
-import org.opensaml.saml2.core.impl.*;
-import org.opensaml.xml.*;
-import org.opensaml.xml.io.*;
-import org.opensaml.xml.util.*;
+import org.joda.time.DateTime;
 import org.opensaml.common.xml.SAMLConstants;
-
-import org.w3c.dom.Element;
+import org.opensaml.saml2.core.AuthnRequest;
+import org.opensaml.saml2.core.Issuer;
+import org.opensaml.saml2.core.Subject;
+import org.opensaml.saml2.core.impl.AuthnRequestBuilder;
+import org.opensaml.saml2.core.impl.AuthnRequestImpl;
+import org.opensaml.saml2.core.impl.IssuerBuilder;
+import org.opensaml.saml2.core.impl.SubjectBuilder;
+import org.opensaml.xml.XMLObjectBuilderFactory;
 
 /**
  *
@@ -63,6 +62,7 @@ public abstract class AbstractHttpHandler {
       bindingUriFormat;
   protected boolean
       forceReAuthentication;
+  private String id = "acmemls" + new DateTime().getMillis();
   
   /*
    * The IssuerName is the unique identifier value of your server.
@@ -146,6 +146,24 @@ public abstract class AbstractHttpHandler {
     return bindingUriFormat;
   }
   
+  /**
+   * Sets the unique identifier of the request. 
+   * @param newId the unique identifier of the request
+   */
+  public void setId(String newId)
+  {
+      this.id = newId;
+  }
+  
+  /**
+   * Gets the unique identifier of the request.  
+   * @return the unique identifier of the request
+   */
+  public String getId()
+  {
+      return id;
+  }
+  
   /*
    * Create the AbstractHttpHandler object for SP usage.
    */
@@ -191,8 +209,8 @@ public abstract class AbstractHttpHandler {
     auth.setVersion(org.opensaml.common.SAMLVersion.VERSION_20);
     DateTime dt = new DateTime();
     auth.setIssueInstant(dt);
-    auth.setID("acmemls" + dt.getMillis());
-
+    auth.setID(id);
+    
     return auth;
   }
   

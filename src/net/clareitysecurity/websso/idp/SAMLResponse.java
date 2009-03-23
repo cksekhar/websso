@@ -24,28 +24,47 @@ package net.clareitysecurity.websso.idp;
 
 import java.io.StringWriter;
 import java.util.Hashtable;
-import org.joda.time.DateTime;
+
 import org.apache.log4j.Logger;
-
-import org.apache.xml.security.signature.XMLSignature;
-
-import org.opensaml.*;
+import org.joda.time.DateTime;
 import org.opensaml.common.SAMLVersion;
-import org.opensaml.common.binding.BindingException;
-import org.opensaml.common.xml.SAMLConstants;
-import org.opensaml.saml2.binding.*;
-import org.opensaml.saml2.core.*;
-import org.opensaml.saml2.core.impl.*;
-import org.opensaml.xml.*;
-import org.opensaml.xml.parse.ParserPool;
-import org.opensaml.xml.io.*;
+import org.opensaml.saml2.core.Assertion;
+import org.opensaml.saml2.core.AuthnContext;
+import org.opensaml.saml2.core.AuthnContextClassRef;
+import org.opensaml.saml2.core.AuthnRequest;
+import org.opensaml.saml2.core.AuthnStatement;
+import org.opensaml.saml2.core.Conditions;
+import org.opensaml.saml2.core.Issuer;
+import org.opensaml.saml2.core.NameID;
+import org.opensaml.saml2.core.NameIDType;
+import org.opensaml.saml2.core.Status;
+import org.opensaml.saml2.core.StatusCode;
+import org.opensaml.saml2.core.Subject;
+import org.opensaml.saml2.core.SubjectConfirmation;
+import org.opensaml.saml2.core.SubjectConfirmationData;
+import org.opensaml.saml2.core.impl.AssertionBuilder;
+import org.opensaml.saml2.core.impl.AuthnContextBuilder;
+import org.opensaml.saml2.core.impl.AuthnContextClassRefBuilder;
+import org.opensaml.saml2.core.impl.AuthnStatementBuilder;
+import org.opensaml.saml2.core.impl.ConditionsBuilder;
+import org.opensaml.saml2.core.impl.IssuerBuilder;
+import org.opensaml.saml2.core.impl.NameIDBuilder;
+import org.opensaml.saml2.core.impl.ResponseBuilder;
+import org.opensaml.saml2.core.impl.StatusBuilder;
+import org.opensaml.saml2.core.impl.StatusCodeBuilder;
+import org.opensaml.saml2.core.impl.SubjectBuilder;
+import org.opensaml.saml2.core.impl.SubjectConfirmationBuilder;
+import org.opensaml.saml2.core.impl.SubjectConfirmationDataBuilder;
+import org.opensaml.xml.XMLObjectBuilderFactory;
+import org.opensaml.xml.io.Marshaller;
+import org.opensaml.xml.io.MarshallerFactory;
+import org.opensaml.xml.io.MarshallingException;
+import org.opensaml.xml.security.keyinfo.KeyInfoHelper;
+import org.opensaml.xml.signature.SignatureConstants;
+import org.opensaml.xml.signature.impl.KeyInfoBuilder;
+import org.opensaml.xml.signature.impl.KeyInfoImpl;
 import org.opensaml.xml.util.Base64;
 import org.opensaml.xml.util.XMLHelper;
-import org.opensaml.xml.security.SecurityHelper;
-import org.opensaml.xml.signature.*;
-import org.opensaml.xml.signature.impl.*;
-import org.opensaml.xml.security.keyinfo.KeyInfoHelper;
-
 import org.w3c.dom.Element;
 
 /**
@@ -91,6 +110,7 @@ public class SAMLResponse {
     minutes;
   private Hashtable
     assertionConsumerService;
+  private String id = "acmeidp" + new DateTime().getMillis();
   
   /**
    * Add a URL and its index to the list of URLs to redirect the browser to.
@@ -127,6 +147,24 @@ public class SAMLResponse {
    */
   public int getMinutes() {
     return minutes;
+  }
+  
+  /**
+   * Sets the unique identifier of the response. 
+   * @param newId the unique identifier of the response
+   */
+  public void setId(String newId)
+  {
+      this.id = newId;
+  }
+  
+  /**
+   * Gets the unique identifier of the response. 
+   * @return the unique identifier of the response
+   */
+  public String getId()
+  {
+     return this.id; 
   }
   
   /*
@@ -234,8 +272,7 @@ public class SAMLResponse {
     assertionConsumerService = null;
   }
   
-  public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException,
-  org.opensaml.xml.signature.SignatureException {
+  public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
     org.opensaml.xml.signature.impl.SignatureImpl signature = null;
     org.opensaml.xml.security.x509.BasicX509Credential credential = null;
     org.opensaml.xml.signature.impl.KeyInfoImpl keyInfo = null;
@@ -296,9 +333,9 @@ public class SAMLResponse {
         log.debug("No Index or URL found. Using empty string.");
         rsp.setDestination(""); // nothing to use
     }
-    DateTime ts = new DateTime();
+
     // Only a single ID value because they must match within the Response
-    String id = "acmeidp" + ts.getMillis();
+
     if (simpleSAMLphp == false) {
       rsp.setID(id);
     } else {
@@ -334,7 +371,6 @@ public class SAMLResponse {
     // Add the issue instance to the Assertion
     assertion.setIssueInstant(dt);
     assertion.setVersion(SAMLVersion.VERSION_20);
-    ts = new DateTime();
     assertion.setID(id);
     // Add the Issuer to the Assertion
     // Build the Issuer object
@@ -441,17 +477,16 @@ public class SAMLResponse {
   }
   
   /*
-   * Create a succesful SAML Response message as XML.
+   * Create a successful SAML Response message as XML.
    * @return The SAML message as XML.
    */
-  public String createSuccessResponse() throws org.opensaml.xml.io.MarshallingException,
-  org.opensaml.xml.signature.SignatureException {
+  public String createSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
     org.opensaml.saml2.core.Response rsp = getSuccessResponse();
     return createSuccessResponse(rsp);
   }
   
   /*
-   * Create a succesful SAML Response message as XML.
+   * Create a successful SAML Response message as XML.
    * @param rsp The Response object to create the XML from.
    * @return The SAML message as XML.
    */
