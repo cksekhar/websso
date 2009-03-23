@@ -1,69 +1,149 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- You may freely edit this file. See commented blocks below for -->
-<!-- some examples of how to customize the build. -->
-<!-- (If you delete it and reopen the project it will be recreated.) -->
-<project name="ClareitySecuritySSO" default="default" basedir=".">
-    <description>Builds, tests, and runs the project ClareitySecuritySSO.</description>
-    <import file="nbproject/build-impl.xml"/>
-    <!--
+<!DOCTYPE project>
 
-    There exist several targets which are by default empty and which can be 
-    used for execution of your tasks. These targets are usually executed 
-    before and after some main targets. They are: 
+<project name="ClareitySecuritySSO" default="usage" basedir=".">
 
-      -pre-init:                 called before initialization of project properties
-      -post-init:                called after initialization of project properties
-      -pre-compile:              called before javac compilation
-      -post-compile:             called after javac compilation
-      -pre-compile-single:       called before javac compilation of single file
-      -post-compile-single:      called after javac compilation of single file
-      -pre-compile-test:         called before javac compilation of JUnit tests
-      -post-compile-test:        called after javac compilation of JUnit tests
-      -pre-compile-test-single:  called before javac compilation of single JUnit test
-      -post-compile-test-single: called after javac compilation of single JUunit test
-      -pre-jar:                  called before JAR building
-      -post-jar:                 called after JAR building
-      -post-clean:               called after cleaning build products
+	<!-- get access to the env vars -->
+	<property environment="env" />
 
-    (Targets beginning with '-' are not intended to be called on their own.)
+	<!-- use the build.properties file -->
+	<property file="build.properties" />
 
-    Example of inserting an obfuscator after compilation could look like this:
+	<!-- set the classpath -->
+	<path id="compile.classpath">
+		<fileset dir="${build.lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+		<pathelement location="${build.classes.dir}" />
+	</path>
 
-        <target name="-post-compile">
-            <obfuscate>
-                <fileset dir="${build.classes.dir}"/>
-            </obfuscate>
-        </target>
+	<!-- describe the targets in this build -->
+	<target name="usage" description="Build file usage info (default task)">
 
-    For list of available properties check the imported 
-    nbproject/build-impl.xml file. 
+		<echo>Using SSO_HOME     = ${sso.home}</echo>
+		<echo>Using SSO_LIB_HOME = ${lib.home}</echo>
 
+		<echo message=" " />
+		<echo message="${project.name} " />
+		<echo message="-------------------------------------------------------" />
+		<echo message=" " />
+		<echo message="  clean     - Delete the build and dist directories and contents" />
+		<echo message="  prepare   - Prepare directory structure and copy dependent libraries" />
+		<echo message="  compile   - Compiles the source code" />
+		<echo message="  jar       - Build jar file" />
+		<echo message="  deploy    - Copy jar file to public lib folder" />
+		<echo message="  javadoc   - Build java docs" />
 
-    Another way to customize the build is by overriding existing main targets.
-    The targets of interest are: 
+	</target>
 
-      -init-macrodef-javac:     defines macro for javac compilation
-      -init-macrodef-junit:     defines macro for junit execution
-      -init-macrodef-debug:     defines macro for class debugging
-      -init-macrodef-java:      defines macro for class execution
-      -do-jar-with-manifest:    JAR building (if you are using a manifest)
-      -do-jar-without-manifest: JAR building (if you are not using a manifest)
-      run:                      execution of project 
-      -javadoc-build:           Javadoc generation
-      test-report:              JUnit report generation
+	<!-- clean up the environment -->
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${dist.dir}" />
+	</target>
 
-    An example of overriding the target for project execution could look like this:
+	<!-- setup the environment -->
+	<target name="prepare">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${build.classes.dir}" />
+		<mkdir dir="${build.lib.dir}" />
+		<mkdir dir="${dist.dir}" />
+		<mkdir dir="${dist.dir}/lib" />
+		<!-- copy the required jars -->
+		<copy todir="${build.lib.dir}">
+			<!-- The OpenSAML 2.2.2 support libraries -->
+			<fileset dir="${lib.home}/opensaml-2.2.2/lib">
+				<include name="*.jar" />
+			</fileset>
+			<!-- The OpenSAML 2.2.2 library -->
+			<fileset dir="${lib.home}/opensaml-2.2.2">
+				<include name="*.jar" />
+			</fileset>
+			<!-- The servlet library -->
+			<fileset dir="${lib.home}/Servlet">
+				<include name="*.jar"/>
+			</fileset>
+			<!-- The junit library -->
+		     <fileset dir="${lib.home}/junit">
+		        	<include name="junit-4.1.jar"/>
+		    </fileset>
+			<!-- The log4j library -->
+		    <fileset dir="${lib.home}/log4j">
+	        	<include name="log4j-1.2.14.jar"/>
+		    </fileset>
+		</copy>
+	</target>
 
-        <target name="run" depends="ClareitySecuritySSO-impl.jar">
-            <exec dir="bin" executable="launcher.exe">
-                <arg file="${dist.jar}"/>
-            </exec>
-        </target>
+	<!-- compile the java classes -->
+	<target name="compile" depends="prepare">
+		<echo message="Compiling files" />
 
-    Notice that the overridden target depends on the jar target and not only on 
-    the compile target as the regular run target does. Again, for a list of available 
-    properties which you can use, check the target you are overriding in the
-    nbproject/build-impl.xml file. 
+		<javac srcdir="${src.dir}" destdir="${build.classes.dir}" deprecation="true" failonerror="true" debug="true">
+			<classpath refid="compile.classpath" />
+		</javac>
 
-    -->
+	</target>
+
+	<!-- build a jar file with everything needed in it -->
+	<target name="jar" depends="prepare, compile">
+		<!-- delete any prior jar file first -->
+		<delete file="${dist.dir}/${dist.name}" />
+		<jar jarfile="${dist.dir}/${dist.name}" manifest="${conf.dir}/MANIFEST.MF">
+			<fileset dir="${build.classes.dir}" />
+			<manifest>
+				<attribute name="Creator" value="${user.name}" />
+				<attribute name="Ant-Version" value="${ant.version}" />
+				<attribute name="Implementation-Vendor" value="Clareity Security, LLC"/>
+			    <attribute name="Implementation-Title" value="ClareitySecuritySSO"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="deploy" depends="jar">
+		<!-- copy the output jar to the public folder -->
+		<copy file="${dist.dir}/${dist.name}" todir="${lib.home}/ClareitySecuritySSO/" />
+	</target>
+
+	<!-- Build the Java docs -->
+	<target name="javadoc">
+		<delete dir="${javadoc.dir}" />
+		<javadoc 
+			destdir="${javadoc.dir}"
+			windowtitle="Clareity Security SSO Toolkit"
+			author="true"
+			>
+			<packageset dir="src" defaultexcludes="true">
+				<include name="net/**"/>
+			</packageset>
+		</javadoc>
+	</target>
+	
+    <!-- JUnit classpath == compile.classpath + build.classes.dir -->
+  <path id="junit.classpath">
+     <pathelement location="${build.classes.dir}"/>
+     <pathelement location="${conf.dir}"/>
+
+     <fileset dir="${build.lib.dir}">
+        <include name="**/*.jar" />
+     </fileset>
+     <fileset dir="${lib.home}/junit">
+        	<include name="junit-4.1.jar"/>
+    </fileset>
+
+  </path>
+	
+	  <target name="junit" depends="compile" description="Run JUnit test">
+
+		  <junit printsummary="on" haltonfailure="yes" 
+					  haltonerror="yes" fork="yes" maxmemory="512m" showoutput="yes">
+	         <classpath refid="junit.classpath"/>
+	         <formatter type="xml"/>
+	         <batchtest todir="${test.results.dir}">
+				 <fileset dir="${test.dir}">
+	                 <include name="**/AuthUser.java"/> 
+	             </fileset>
+	         </batchtest>
+	      </junit>
+
+	  </target>
+	
 </project>
