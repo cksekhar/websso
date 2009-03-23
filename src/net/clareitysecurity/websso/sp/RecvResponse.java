@@ -124,6 +124,7 @@ public class RecvResponse {
    * @param newSignatureValidator The new SignatureValidator object.
    */
   public void setSignatureValidator(SignatureValidator newSignatureValidator) {
+	log.debug("Setting SignatureValidator to " + newSignatureValidator);
     signatureValidator = newSignatureValidator;
   }
   
@@ -135,7 +136,7 @@ public class RecvResponse {
       bootstrap = true;
       if (log.isInfoEnabled()) {
         bootcount++;
-        log.info("RecvResponse.java (line 136) bootstrap has been called. [" + bootcount + "]");
+        log.info("RecvResponse.java (line 139) bootstrap has been called. [" + bootcount + "]");
       }
     }
   }
@@ -152,7 +153,7 @@ public class RecvResponse {
     BasicSAMLMessageContext context = new BasicSAMLMessageContext();
     context.setInboundMessageTransport(adapter);
     decode.decode(context);
-    relayState = adapter.getParameterValue(this.RELAY_STATE_PARAM); // decode.getRelayState();
+    relayState = adapter.getParameterValue(RecvResponse.RELAY_STATE_PARAM); // decode.getRelayState();
     // Only decode the relay state if there is one
     if ((relayState != null) && (relayState.equalsIgnoreCase("") == false)) {
       relayState = new String(Base64.decode(relayState));
@@ -172,11 +173,31 @@ public class RecvResponse {
     // Make sure at least one is present
     if (assertionsList.size() > 0) {
       // Get the first one only
+      log.debug("Getting first assertion to validate.");
       assertion = (Assertion)assertionsList.get(0);
+      
+      if (assertion.isSigned() == false) {
+    	  log.debug("Assertion is not signed.");
+      }
       // Now we must validate the signature of the assertion
       Signature signatureToValidate;
       signatureToValidate = assertion.getSignature();
+      
+      if (signatureToValidate == null) {
+    	  log.debug("No signature found in assertion. Failing signature validation.");
+    	  throw new org.opensaml.xml.validation.ValidationException("No signature found in assertion. Failing signature validation.");
+      }
       // Now try to validate. Throw exception if not valid.
+      if (log.isDebugEnabled()) {
+          log.debug("Assertion is [" + assertion + "]");
+          // Pull the Subject data
+          Subject subject = assertion.getSubject();
+          // Now we have the NameID element
+          NameID nameId = subject.getNameID();
+          log.debug("Name recv is [" + nameId.getValue() + "]");
+    	  
+      }
+      log.debug("Attempting signature validation for [" + assertion.toString() + "]");
       signatureValidator.validate(signatureToValidate);
       
       // Pull the Subject data
