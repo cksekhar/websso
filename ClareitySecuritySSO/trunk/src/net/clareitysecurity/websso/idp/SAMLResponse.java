@@ -272,7 +272,8 @@ public class SAMLResponse {
     assertionConsumerService = null;
   }
   
-  public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
+  public org.opensaml.saml2.core.Response getSuccessResponse() throws org.opensaml.xml.io.MarshallingException,
+  	org.opensaml.xml.signature.SignatureException {
     org.opensaml.xml.signature.impl.SignatureImpl signature = null;
     org.opensaml.xml.security.x509.BasicX509Credential credential = null;
     org.opensaml.xml.signature.impl.KeyInfoImpl keyInfo = null;
@@ -480,7 +481,8 @@ public class SAMLResponse {
    * Create a successful SAML Response message as XML.
    * @return The SAML message as XML.
    */
-  public String createSuccessResponse() throws org.opensaml.xml.io.MarshallingException {
+  public String createSuccessResponse() throws org.opensaml.xml.io.MarshallingException,
+  org.opensaml.xml.signature.SignatureException {
     org.opensaml.saml2.core.Response rsp = getSuccessResponse();
     return createSuccessResponse(rsp);
   }
